@@ -1,11 +1,12 @@
-<!-- ──────────────────────────────────────────────────────────────── -->
-<!--                     HACKTHEBOX  ▸  OFFICIAL WRITE-UP            -->
-<!-- Machine : <Planning>                                             -->
-<!-- Difficulty : <Medium>   OS : <Kali Linux>                         -->
-<!-- Release   : <2025-06-24>      Author : <Colosion>            -->
-<!-- ──────────────────────────────────────────────────────────────── -->
+HACKTHEBOX ▸  WRITE-UP
 
-# <Planning> – Penetration Test Report
+Machine: Planning
+
+Difficulty: Medium | OS: Kali Linux
+
+Release: 2025-06-24 | Author: Colosion
+
+# Planning – Penetration Test Report
 
 > **Legal Notice.** All activities described in this report were performed exclusively on the retired Hack The Box machine *Planning* within the HTB lab environment and with explicit authorization from Hack The Box. The techniques and exploits documented here are provided for educational purposes only. Do **not** attempt to replicate them on systems for which you do not have written permission; doing so may violate local, national, or international laws.
 
