@@ -142,6 +142,7 @@ After this, we gain access to the system.
 <p align="center">
   <img src="https://github.com/Neiton-cmd/Write-ups/blob/main/HackTheBox/Planning/END.png" alt="ROOT" width="400">
 </p>
+
 ## 5. Nice 
 Thank you for reading this walkthrough. I hope it provided clear insight into the techniques used to compromise the *Planning* machine and highlighted key takeaways for both offensive and defensive practitioners. Feedback and suggestions are welcome—feel free to reach out or open an issue in the repo. Happy hacking!  
 
