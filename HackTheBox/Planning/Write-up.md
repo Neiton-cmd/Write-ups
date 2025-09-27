@@ -29,6 +29,7 @@ nmap -p- -T4 -v <TARGET_IP>
   <img src="https://github.com/Neiton-cmd/Write-ups/blob/main/HackTheBox/Planning/nmap1.png" alt="first nmap" width="250">
 </p>
 Using the following `nmap` command, we can discover **all** open ports on the target.
+
 ```bash
 nmap -p 22,80 -sCV <TARGET_IP>
 ```
