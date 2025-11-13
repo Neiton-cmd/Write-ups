@@ -36,9 +36,7 @@ Colosion
 
 [[privesc]]
 == Privilege Escalation
-Explain the escalation vector, misconfigurations, vulnerable services, or AD privilege paths.
 
 
 [[notes]]
 == Final Notes
-Summary, lessons learned, recommendations.
