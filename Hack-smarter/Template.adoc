@@ -1,4 +1,4 @@
-= Hack Smarter Machine Write-Up
+=  Machine Write-Up
 Colosion
 :toc:
 :toclevels: 3
