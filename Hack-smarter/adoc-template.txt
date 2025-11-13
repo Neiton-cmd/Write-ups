@@ -7,45 +7,56 @@ Headlines
 === Heading 2 (H3)
 ==== Heading 3 (H4)
 
-
+//// 
+Жирний / курсив / моноширинний 
+////
 *bold*
 _italic_
 `monospace`
 
+////
+Списки
+////
 
+Нумерований
 1. First
 2. Second
 
-
+Маркований
 * Item
 ** Sub-item
 
+Кодові блоки
 
+Фіксований блок коду:
 [source]
 ----
 nmap -sV 10.10.10.10
 ----
 
-
+Inline-code:
 `ping -c 1`
 
 
+Посилання
+Внутрішній якір:
 [[enum]]
 == Enumeration
 
+Внутрішній лінк:
 <<enum, Go to Enumeration>>
 <<enum>>
 
-
+Лінк на інший файл:
 xref:file.adoc#enum[Go to Enumeration]
 
-
+Зовнішній URL:
 https://example.com[Example]
 
-
+Зображення / Скріншоти
 image::screenshot.png[alt text, width=600]
 
-
+Таблиця
 |===
 |Port |Service |Notes
 
@@ -54,11 +65,15 @@ image::screenshot.png[alt text, width=600]
 |===
 
 
-
+Цитата / Примітка
 [quote]
 ____
 This is a quote.
 ____
+
+Вставка файлів (include)
+include::otherfile.adoc[]
+
 
 
 //// 
