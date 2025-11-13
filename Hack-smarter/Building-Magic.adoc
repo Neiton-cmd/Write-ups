@@ -1,0 +1,55 @@
+= HTB Machine Write-Up
+Author Name
+:toc:
+:toclevels: 3
+
+== Table of Contents
+- <<overview,Overview>>
+- <<enumeration,Enumeration>>
+- <<ad-enum,AD Enumeration>>
+- <<ad-access,AD Enumeration & Access>>
+- <<privesc,Privilege Escalation>>
+- <<notes,Final Notes>>
+
+[[overview]]
+== Overview
+Short description of the machine, its difficulty, notable techniques, and general approach.
+
+Example internal link: see <<enumeration,Enumeration>>.
+
+Example cross-file link (if needed):
+xref:extra-notes.adoc#extra[Extra Notes File]
+
+
+[[enumeration]]
+== Enumeration
+Describe service discovery, ports, banners, and initial surface.
+
+Example internal link:
+See AD enumeration: <<ad-enum>>.
+
+
+[[ad-enum]]
+== AD Enumeration
+Outline the domain structure, users, groups, shares, GPOs, ACLs.
+
+Example link back:
+Return to <<overview,Overview>>.
+
+
+[[ad-access]]
+== AD Enumeration & Access
+Describe foothold within AD, accessible objects, usable permissions, tokens, sessions, etc.
+
+Example internal link:
+Next section: <<privesc,Privilege Escalation>>.
+
+
+[[privesc]]
+== Privilege Escalation
+Explain the escalation vector, misconfigurations, vulnerable services, or AD privilege paths.
+
+
+[[notes]]
+== Final Notes
+Summary, lessons learned, recommendations.
