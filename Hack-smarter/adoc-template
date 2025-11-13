@@ -1,0 +1,65 @@
+
+//// Headlines
+= Title (H1)
+== Heading 1 (H2)
+=== Heading 2 (H3)
+==== Heading 3 (H4)
+
+
+*bold*
+_italic_
+`monospace`
+
+
+1. First
+2. Second
+
+
+* Item
+** Sub-item
+
+
+[source]
+----
+nmap -sV 10.10.10.10
+----
+
+
+`ping -c 1`
+
+
+[[enum]]
+== Enumeration
+
+<<enum, Go to Enumeration>>
+<<enum>>
+
+
+xref:file.adoc#enum[Go to Enumeration]
+
+
+https://example.com[Example]
+
+
+image::screenshot.png[alt text, width=600]
+
+
+|===
+|Port |Service |Notes
+
+|80 |HTTP |Landing page
+|445 |SMB |Guest access
+|===
+
+
+
+[quote]
+____
+This is a quote.
+____
+
+
+//// 
+Comments
+////
+
