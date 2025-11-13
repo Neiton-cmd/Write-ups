@@ -54,7 +54,9 @@ xref:file.adoc#enum[Go to Enumeration]
 https://example.com[Example]
 
 Зображення / Скріншоти
-image::screenshot.png[alt text, width=600]
+[.text-center]
+image::CrackStation.png[alt text , width=600 , height=400]
+
 
 Таблиця
 |===
@@ -74,6 +76,7 @@ ____
 Вставка файлів (include)
 include::otherfile.adoc[]
 
+NOTE: This is a note.
 
 
 //// 
