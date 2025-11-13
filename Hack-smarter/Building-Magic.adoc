@@ -1,0 +1,50 @@
+=  Building-Magic Machine Write-Up
+Author: Colosion
+Difficulty: easy -> medium
+:toc:
+:toclevels: 3
+
+== Table of Contents
+- <<scope,Scope and Objective>>
+- <<enumeration,Enumeration>>
+- <<ad-enum,AD Enumeration>>
+- <<ad-access,AD Enumeration & Access>>
+- <<privesc,Privilege Escalation>>
+- <<notes,Final Notes>>
+
+[[scope]]
+== Scope and Objective
+*Objective*: As a penetration tester on the Hack Smarter Red Team, your objective is to achieve a full compromise of the Active Directory environment.
+
+*Initial Access*: A prior enumeration phase has yielded a leaked database containing user credentials (usernames and hashed passwords). This information will serve as your starting point for gaining initial access to the network.
+
+*Execution*: Your task is to leverage the compromised credentials to escalate privileges, move laterally through the Active Directory, and ultimately achieve a complete compromise of the domain.
+
+* buildingmagic.local
+* dc01.buildingmagic.local
+
+*Leaked Database File*
+
+
+
+[[enumeration]]
+== Enumeration
+
+
+
+[[ad-enum]]
+== AD Enumeration
+
+
+
+[[ad-access]]
+== AD Enumeration & Access
+
+
+
+[[privesc]]
+== Privilege Escalation
+
+
+[[notes]]
+== Final Notes
