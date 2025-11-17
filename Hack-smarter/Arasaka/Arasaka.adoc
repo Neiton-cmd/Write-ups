@@ -1,5 +1,6 @@
-=  Machine Write-Up
-Colosion
+=  Machine Write-Up Arasaka
+Author: Colosion
+Level: Easy
 
 :toc:
 :toclevels: 3
