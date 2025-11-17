@@ -347,3 +347,9 @@ User `the_emperor` has the same `privileges` as user `Administrator` so system i
 
 [[notes]]
 == Final Notes
+
+`Certificate`
+
+
+
+
