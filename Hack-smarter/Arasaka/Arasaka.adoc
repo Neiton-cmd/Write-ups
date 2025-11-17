@@ -1,0 +1,43 @@
+=  Machine Write-Up
+Colosion
+
+:toc:
+:toclevels: 3
+
+== Table of Contents
+- <<overview,Overview>>
+- <<enumeration,Enumeration>>
+- <<ad-enum,AD Enumeration>>
+- <<ad-access,AD Enumeration & Access>>
+- <<privesc,Privilege Escalation>>
+- <<notes,Final Notes>>
+
+[[overview]]
+== Overview
+
+
+
+
+
+
+[[enumeration]]
+== Enumeration
+
+
+
+[[ad-enum]]
+== AD Enumeration
+
+
+
+[[ad-access]]
+== AD Enumeration & Access
+
+
+
+[[privesc]]
+== Privilege Escalation
+
+
+[[notes]]
+== Final Notes
