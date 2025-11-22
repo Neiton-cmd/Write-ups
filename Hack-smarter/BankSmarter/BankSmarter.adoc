@@ -2,7 +2,7 @@
 
 Author: Colosion
 OS: Linux
-Level: hard for me
+Level: hard 
 
 :toc:
 :toclevels: 3
