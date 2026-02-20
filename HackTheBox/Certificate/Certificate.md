@@ -1,6 +1,8 @@
 
 HackTheBox machine 
+
 IP : `10.129.232.96`
+
 Active Directory lab
 
 Scanning 
